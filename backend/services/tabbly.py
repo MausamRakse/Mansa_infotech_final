@@ -40,10 +40,13 @@ def trigger_call(agent_id, called_to, custom_instruction="", custom_first_line="
     and pass them as custom_instruction.
     Returns: full Tabbly response dict
     """
-    try:
-        parsed_agent_id = int(agent_id)
-    except (ValueError, TypeError):
+    if str(agent_id).startswith("default-"):
         parsed_agent_id = int(os.getenv("TABBLY_AGENT_ID", 1))
+    else:
+        try:
+            parsed_agent_id = int(agent_id)
+        except (ValueError, TypeError):
+            raise ValueError(f"Invalid agent_id provided: {agent_id}. Agent ID must be a numeric value associated with Tabbly.")
 
     payload = {
         "organization_id": int(os.getenv("TABBLY_ORG_ID")),
@@ -59,6 +62,34 @@ def trigger_call(agent_id, called_to, custom_instruction="", custom_first_line="
     r = requests.post(f"{BASE}/dashboard/agents/endpoints/trigger-call",
                       headers={"Content-Type": "application/json"},
                       json=payload)
+    r.raise_for_status()
+    return r.json()
+
+def get_agents():
+    payload = {"api_key": TABBLY_API_KEY}
+    r = requests.post(f"{BASE}/api/get-agents", json=payload, headers={"Content-Type": "application/json"})
+    r.raise_for_status()
+    return r.json().get("data", [])
+
+def update_agent(agent_id, agent_name, prompt_text, voice_id=1, status="active"):
+    payload = {
+        "api_key": TABBLY_API_KEY,
+        "agent_id": int(agent_id),
+        "agent_name": agent_name,
+        "prompt_text": prompt_text,
+        "voice_id": int(voice_id),
+        "status": status
+    }
+    r = requests.post(f"{BASE}/api/update-agent", json=payload, headers={"Content-Type": "application/json"})
+    r.raise_for_status()
+    return r.json()
+
+def delete_agent(agent_id):
+    payload = {
+        "api_key": TABBLY_API_KEY,
+        "agent_id": int(agent_id)
+    }
+    r = requests.post(f"{BASE}/api/delete-agent", json=payload, headers={"Content-Type": "application/json"})
     r.raise_for_status()
     return r.json()
 

@@ -8,14 +8,37 @@ const CallLogs = () => {
   const [loading, setLoading] = useState(true);
   const [selectedTranscript, setSelectedTranscript] = useState<string | null>(null);
 
+  const formatDate = (dateStr: string) => {
+    if (!dateStr || dateStr === "unknown") return "N/A";
+    const safeDate = dateStr.replace(' ', 'T') + 'Z'; // Force UTC 
+    const d = new Date(safeDate);
+    return isNaN(d.getTime()) 
+      ? dateStr 
+      : d.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
+  };
+
   useEffect(() => {
-    fetchCallLogs(50).then(data => {
-      setLogs(data);
-      setLoading(false);
-    }).catch(err => {
-      console.error(err);
-      setLoading(false);
-    });
+    let isMounted = true;
+    
+    const loadData = () => {
+      fetchCallLogs(50).then(data => {
+        if (isMounted) {
+          setLogs(data);
+          setLoading(false);
+        }
+      }).catch(err => {
+        console.error(err);
+        if (isMounted) setLoading(false);
+      });
+    };
+
+    loadData();
+    const interval = setInterval(loadData, 5000);
+
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
   }, []);
 
   return (
@@ -44,6 +67,7 @@ const CallLogs = () => {
             <table className="w-full text-left text-[14px]">
               <thead className="bg-surface sticky top-0 border-b border-border shadow-sm z-10 text-textMuted">
                 <tr>
+                  <th className="px-6 py-4 font-semibold text-[12px] uppercase tracking-wider">Agent</th>
                   <th className="px-6 py-4 font-semibold text-[12px] uppercase tracking-wider">Phone Number</th>
                   <th className="px-6 py-4 font-semibold text-[12px] uppercase tracking-wider">Date & Time</th>
                   <th className="px-6 py-4 font-semibold text-[12px] uppercase tracking-wider">Status</th>
@@ -55,8 +79,9 @@ const CallLogs = () => {
               <tbody className="divide-y divide-border/60">
                 {logs.map((log, i) => (
                   <tr key={i} className="hover:bg-surface/50 transition-colors group">
+                    <td className="px-6 py-4 text-[13px] font-medium text-textPrimary">{log.agent_name || "Unknown Agent"}</td>
                     <td className="px-6 py-4 font-mono text-[13px]">{log.phone_number}</td>
-                    <td className="px-6 py-4 text-textMuted whitespace-nowrap">{new Date(log.date).toLocaleString()}</td>
+                    <td className="px-6 py-4 text-textMuted whitespace-nowrap">{formatDate(log.date)}</td>
                     <td className="px-6 py-4">
                       <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[12px] font-bold tracking-wide ${
                         log.status === 'Completed' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'

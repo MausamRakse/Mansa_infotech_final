@@ -17,6 +17,12 @@ export const triggerCall = (data: TriggerCallPayload) =>
 export const fetchCallLogs = (limit = 50) =>
   api.get(`/logs/call-logs?limit=${limit}`).then(r => r.data.logs);
 
+export const updateAgentApi = (data: UpdateAgentPayload) =>
+  api.post("/agents/update-agent", data).then(r => r.data);
+
+export const deleteAgentApi = (agent_id: string) =>
+  api.post("/agents/delete-agent", { agent_id }).then(r => r.data);
+
 export interface CreateAgentPayload {
   agent_name: string;
   custom_first_line: string;
@@ -24,6 +30,10 @@ export interface CreateAgentPayload {
   stt_language: string;
   voice_id: number;
   enable_calendar_booking: boolean;
+}
+
+export interface UpdateAgentPayload extends CreateAgentPayload {
+  agent_id: string;
 }
 
 export interface TriggerCallPayload {
@@ -51,4 +61,5 @@ export interface CallLog {
   recording_url: string | null;
   transcript: string | null;
   json_output: string | null;
+  agent_name: string;
 }

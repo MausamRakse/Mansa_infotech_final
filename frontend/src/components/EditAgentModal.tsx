@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { X, Loader2 } from 'lucide-react';
-import type { Agent } from '../api/client';
+import { updateAgentApi, deleteAgentApi, type Agent } from '../api/client';
 import { useAgentStore } from '../store/agentStore';
 import toast from 'react-hot-toast';
 
@@ -11,7 +11,8 @@ interface Props {
 
 const EditAgentModal = ({ agent, onClose }: Props) => {
   const [loading, setLoading] = useState(false);
-  const { updateAgent } = useAgentStore();
+  const [isDeleting, setIsDeleting] = useState(false);
+  const { updateAgent, deleteAgent } = useAgentStore();
   
   const [formData, setFormData] = useState({
     agent_name: agent.name,
@@ -38,9 +39,18 @@ const EditAgentModal = ({ agent, onClose }: Props) => {
 
     setLoading(true);
     try {
-      // In a real app we'd call a PUT /agents/:id endpoint here
-      // For now we just update local state
-      await new Promise(r => setTimeout(r, 600)); // fake network delay
+      if (!agent.id.startsWith("default-")) {
+        await updateAgentApi({
+          agent_id: agent.id,
+          agent_name: formData.agent_name,
+          custom_first_line: formData.custom_first_line,
+          prompt_text: formData.prompt_text,
+          stt_language: formData.stt_language,
+          voice_id: formData.voice_id,
+          enable_calendar_booking: formData.enable_calendar_booking
+        });
+      }
+      
       updateAgent({
         ...agent,
         name: formData.agent_name,
@@ -56,6 +66,22 @@ const EditAgentModal = ({ agent, onClose }: Props) => {
       toast.error('Failed to update agent');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!confirm("Are you sure you want to delete this agent? This action cannot be undone.")) return;
+    setIsDeleting(true);
+    try {
+      if (!agent.id.startsWith("default-")) {
+        await deleteAgentApi(agent.id);
+      }
+      deleteAgent(agent.id);
+      toast.success('Agent deleted successfully!');
+      onClose();
+    } catch (error) {
+      toast.error('Failed to delete agent');
+      setIsDeleting(false);
     }
   };
 
@@ -151,12 +177,17 @@ const EditAgentModal = ({ agent, onClose }: Props) => {
             </button>
           </div>
 
-          <div className="pt-2 flex justify-end gap-3 border-t border-border mt-4">
-            <button type="button" onClick={onClose} className="btn-outline">Cancel</button>
-            <button type="submit" disabled={loading} className="btn-primary min-w-[120px] flex justify-center items-center gap-2">
-              {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-              {loading ? 'Saving...' : 'Save Changes'}
+          <div className="pt-2 flex items-center justify-between border-t border-border mt-4">
+            <button type="button" onClick={handleDelete} disabled={isDeleting || loading} className="text-error hover:text-red-700 transition-colors text-[14px] font-medium disabled:opacity-50">
+              {isDeleting ? 'Deleting...' : 'Delete Agent'}
             </button>
+            <div className="flex gap-3">
+              <button type="button" onClick={onClose} disabled={isDeleting || loading} className="btn-outline">Cancel</button>
+              <button type="submit" disabled={isDeleting || loading} className="btn-primary min-w-[120px] flex justify-center items-center gap-2">
+                {loading && <Loader2 className="w-4 h-4 animate-spin" />}
+                {loading ? 'Saving...' : 'Save Changes'}
+              </button>
+            </div>
           </div>
         </form>
       </div>
