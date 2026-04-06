@@ -1,7 +1,11 @@
 import axios from "axios";
 
+const isProd = import.meta.env.PROD;
+// In production, everything shares the same origin. In dev, we use the local FastAPI server.
+const devUrl = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
+  baseURL: isProd ? "/api" : `${devUrl}/api`,
   headers: { "Content-Type": "application/json" },
 });
 
