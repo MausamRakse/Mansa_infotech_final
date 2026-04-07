@@ -29,8 +29,8 @@ const Sidebar = () => {
             to={item.path}
             className={({ isActive }) => `
               flex items-center gap-3 px-3 py-2.5 rounded-lg text-[14px] font-medium transition-all
-              ${isActive 
-                ? 'bg-primary-light text-primary border-l-[3px] border-primary ml-[-12px] pl-[calc(0.75rem+9px)]' 
+              ${isActive
+                ? 'bg-primary-light text-primary border-l-[3px] border-primary ml-[-12px] pl-[calc(0.75rem+9px)]'
                 : 'text-textMuted hover:bg-surface hover:text-textPrimary'}
             `}
           >

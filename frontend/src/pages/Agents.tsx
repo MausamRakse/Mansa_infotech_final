@@ -61,7 +61,7 @@ const Agents = () => {
       <div className="flex-1 overflow-y-auto pb-8">
         {loading && agents.length === 0 ? (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 opacity-60">
-             {[1,2,3,4].map(i => <div key={i} className="h-48 bg-surface border border-border rounded-[12px] animate-pulse" />)}
+            {[1, 2, 3, 4].map(i => <div key={i} className="h-48 bg-surface border border-border rounded-[12px] animate-pulse" />)}
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -80,11 +80,11 @@ const Agents = () => {
       {isCreateOpen && (
         <CreateAgentModal onClose={() => setIsCreateOpen(false)} />
       )}
-      
+
       {selectedAgentForEdit && (
-        <EditAgentModal 
-          agent={selectedAgentForEdit} 
-          onClose={() => setSelectedAgentForEdit(null)} 
+        <EditAgentModal
+          agent={selectedAgentForEdit}
+          onClose={() => setSelectedAgentForEdit(null)}
         />
       )}
 

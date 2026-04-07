@@ -44,7 +44,7 @@ const TriggerCallModal = ({ agent, onClose }: Props) => {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity" />
-      <div 
+      <div
         className="relative bg-white rounded-[16px] w-full max-w-[420px] shadow-xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200"
         onClick={e => e.stopPropagation()}
       >
@@ -64,12 +64,12 @@ const TriggerCallModal = ({ agent, onClose }: Props) => {
               <div className="bg-primary-light p-3 rounded-lg text-[13px] text-primary border border-primary/20">
                 You are about to trigger an outbound call from <strong>{agent.name}</strong>.
               </div>
-              
+
               <div className="flex flex-col gap-1.5">
                 <label className="text-[13px] font-semibold text-textPrimary">Phone Number</label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-textMuted text-[14px]"></span>
-                  <input 
+                  <input
                     type="text"
                     value={phone}
                     onChange={e => setPhone(e.target.value)}
@@ -82,7 +82,7 @@ const TriggerCallModal = ({ agent, onClose }: Props) => {
 
               <div className="flex flex-col gap-1.5">
                 <label className="text-[13px] font-semibold text-textPrimary">Custom Greeting (Optional)</label>
-                <input 
+                <input
                   type="text"
                   value={customGreeting}
                   onChange={e => setCustomGreeting(e.target.value)}

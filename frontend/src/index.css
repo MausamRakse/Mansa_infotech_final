@@ -23,12 +23,18 @@
     font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     @apply antialiased text-[14px] leading-[1.6];
   }
-  
-  h1, h2, h3, h4, h5, h6 {
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     @apply font-semibold;
   }
 
-  code, pre {
+  code,
+  pre {
     font-family: 'DM Mono', monospace;
   }
 }
@@ -37,10 +43,12 @@
   .btn-primary {
     @apply bg-[#0d9488] text-white hover:bg-[#0f766e] rounded-lg px-4 py-2 font-medium transition-colors;
   }
+
   .btn-outline {
     @apply border border-[#e2e8f0] bg-white hover:bg-[#f8fafc] rounded-lg px-4 py-2 font-medium transition-colors;
   }
+
   .card-shadow {
-    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
   }
 }

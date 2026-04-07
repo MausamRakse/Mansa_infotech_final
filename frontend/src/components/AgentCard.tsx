@@ -9,7 +9,7 @@ interface AgentCardProps {
 
 const AgentCard = ({ agent, onEdit, onTriggerCall }: AgentCardProps) => {
   const isCustom = !agent.category;
-  
+
   const getIcon = () => {
     if (agent.category === 'customer_care') return <Headphones className="w-5 h-5 text-primary" />;
     if (agent.category === 'growth') return <Megaphone className="w-5 h-5 text-primary" />;
@@ -33,7 +33,7 @@ const AgentCard = ({ agent, onEdit, onTriggerCall }: AgentCardProps) => {
           {getIcon()}
         </div>
       </div>
-      
+
       <div className="flex-1">
         <h3 className="text-[18px] font-bold text-textPrimary mb-2 leading-tight">{agent.name}</h3>
         <p className="text-[14px] text-textMuted line-clamp-2">
@@ -42,14 +42,14 @@ const AgentCard = ({ agent, onEdit, onTriggerCall }: AgentCardProps) => {
       </div>
 
       <div className="mt-6 flex items-center gap-3 pt-4 border-t border-border/50">
-        <button 
-          onClick={(e) => { e.stopPropagation(); onEdit(); }} 
+        <button
+          onClick={(e) => { e.stopPropagation(); onEdit(); }}
           className="btn-outline flex-1 text-[13px] py-1.5"
         >
           Edit
         </button>
-        <button 
-          onClick={(e) => { e.stopPropagation(); onTriggerCall(); }} 
+        <button
+          onClick={(e) => { e.stopPropagation(); onTriggerCall(); }}
           className="btn-primary flex-1 text-[13px] py-1.5 shadow-sm shadow-primary/20"
         >
           Trigger Call

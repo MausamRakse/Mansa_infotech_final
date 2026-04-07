@@ -82,9 +82,8 @@ const Dashboard = () => {
                     <td className="px-6 py-3.5 font-mono text-[13px]">{log.phone_number}</td>
                     <td className="px-6 py-3.5 text-textMuted whitespace-nowrap">{new Date(log.date).toLocaleString()}</td>
                     <td className="px-6 py-3.5">
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[12px] font-medium ${
-                        log.status === 'Completed' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
-                      }`}>
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[12px] font-medium ${log.status === 'Completed' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
+                        }`}>
                         {log.status}
                       </span>
                     </td>

@@ -12,14 +12,14 @@ const CallLogs = () => {
     if (!dateStr || dateStr === "unknown") return "N/A";
     const safeDate = dateStr.replace(' ', 'T') + 'Z'; // Force UTC 
     const d = new Date(safeDate);
-    return isNaN(d.getTime()) 
-      ? dateStr 
+    return isNaN(d.getTime())
+      ? dateStr
       : d.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
   };
 
   useEffect(() => {
     let isMounted = true;
-    
+
     const loadData = () => {
       fetchCallLogs(50).then(data => {
         if (isMounted) {
@@ -83,14 +83,13 @@ const CallLogs = () => {
                     <td className="px-6 py-4 font-mono text-[13px]">{log.phone_number}</td>
                     <td className="px-6 py-4 text-textMuted whitespace-nowrap">{formatDate(log.date)}</td>
                     <td className="px-6 py-4">
-                      <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[12px] font-bold tracking-wide ${
-                        log.status === 'Completed' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
-                      }`}>
+                      <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[12px] font-bold tracking-wide ${log.status === 'Completed' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
+                        }`}>
                         {log.status}
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      <button 
+                      <button
                         onClick={() => setSelectedTranscript(log.transcript || '')}
                         disabled={!log.transcript}
                         className="text-primary hover:text-primary-hover font-medium disabled:text-textMuted/40 transition-colors disabled:cursor-not-allowed text-[13px]"
@@ -109,8 +108,8 @@ const CallLogs = () => {
                     </td>
                     <td className="px-6 py-4 text-right">
                       {log.json_output && (
-                        <a 
-                          href={`data:application/json;charset=utf-8,${encodeURIComponent(log.json_output)}`} 
+                        <a
+                          href={`data:application/json;charset=utf-8,${encodeURIComponent(log.json_output)}`}
                           download={`call-${log.call_id}.json`}
                           className="inline-flex items-center justify-center p-1.5 rounded-md text-textMuted hover:bg-white hover:text-primary shadow-sm opacity-0 group-hover:opacity-100 transition-all border border-transparent hover:border-border"
                           title="Download Data"
@@ -128,9 +127,9 @@ const CallLogs = () => {
       </div>
 
       {selectedTranscript !== null && (
-        <TranscriptModal 
-          transcript={selectedTranscript} 
-          onClose={() => setSelectedTranscript(null)} 
+        <TranscriptModal
+          transcript={selectedTranscript}
+          onClose={() => setSelectedTranscript(null)}
         />
       )}
     </div>
