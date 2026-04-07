@@ -5,7 +5,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from routers import agents, calls, logs
 
-app = FastAPI(title="Voice AI Platform")
+app = FastAPI(title="convexa.ai")
 
 app.add_middleware(
     CORSMiddleware,

@@ -13,7 +13,7 @@ const EditAgentModal = ({ agent, onClose }: Props) => {
   const [loading, setLoading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const { updateAgent, deleteAgent } = useAgentStore();
-  
+
   const [formData, setFormData] = useState({
     agent_name: agent.name,
     custom_first_line: agent.greeting,
@@ -50,7 +50,7 @@ const EditAgentModal = ({ agent, onClose }: Props) => {
           enable_calendar_booking: formData.enable_calendar_booking
         });
       }
-      
+
       updateAgent({
         ...agent,
         name: formData.agent_name,
@@ -88,8 +88,8 @@ const EditAgentModal = ({ agent, onClose }: Props) => {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity" />
-      <div 
-        className="relative bg-white rounded-[16px] w-full max-w-[520px] shadow-xl flex flex-col animate-in zoom-in-95 duration-200"
+      <div
+        className="relative bg-white rounded-[16px] w-full max-w-[700px] shadow-xl flex flex-col animate-in zoom-in-95 duration-200"
         onClick={e => e.stopPropagation()}
       >
         <div className="px-6 py-5 border-b border-border flex items-center justify-between">
@@ -99,11 +99,11 @@ const EditAgentModal = ({ agent, onClose }: Props) => {
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 flex flex-col gap-4 overflow-y-auto max-h-[70vh]">
+        <form onSubmit={handleSubmit} className="p-6 flex flex-col gap-4 overflow-y-auto max-h-[85vh]">
           {/* Same fields as Create... */}
           <div className="flex flex-col gap-1.5">
             <label className="text-[13px] font-semibold text-textPrimary">Agent Name</label>
-            <input 
+            <input
               type="text"
               value={formData.agent_name}
               onChange={e => setFormData({ ...formData, agent_name: e.target.value })}
@@ -114,7 +114,7 @@ const EditAgentModal = ({ agent, onClose }: Props) => {
 
           <div className="flex flex-col gap-1.5">
             <label className="text-[13px] font-semibold text-textPrimary">Greeting / First Line</label>
-            <input 
+            <input
               type="text"
               value={formData.custom_first_line}
               onChange={e => setFormData({ ...formData, custom_first_line: e.target.value })}
@@ -125,10 +125,10 @@ const EditAgentModal = ({ agent, onClose }: Props) => {
 
           <div className="flex flex-col gap-1.5">
             <label className="text-[13px] font-semibold text-textPrimary">Agent Prompt</label>
-            <textarea 
+            <textarea
               value={formData.prompt_text}
               onChange={e => setFormData({ ...formData, prompt_text: e.target.value })}
-              rows={6}
+              rows={12}
               className={`border rounded-[8px] px-3 py-2 text-[14px] bg-white outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all resize-none ${errors.prompt_text ? 'border-error' : 'border-border'}`}
             />
             {errors.prompt_text && <span className="text-[12px] text-error">Required field</span>}
@@ -137,7 +137,7 @@ const EditAgentModal = ({ agent, onClose }: Props) => {
           <div className="grid grid-cols-2 gap-4">
             <div className="flex flex-col gap-1.5">
               <label className="text-[13px] font-semibold text-textPrimary">Language</label>
-              <select 
+              <select
                 value={formData.stt_language}
                 onChange={e => setFormData({ ...formData, stt_language: e.target.value })}
                 className="border border-border rounded-[8px] px-3 py-2 text-[14px] bg-white outline-none focus:border-primary"
@@ -150,7 +150,7 @@ const EditAgentModal = ({ agent, onClose }: Props) => {
             </div>
             <div className="flex flex-col gap-1.5">
               <label className="text-[13px] font-semibold text-textPrimary">Voice Options</label>
-              <select 
+              <select
                 value={formData.voice_id}
                 onChange={e => setFormData({ ...formData, voice_id: parseInt(e.target.value) })}
                 className="border border-border rounded-[8px] px-3 py-2 text-[14px] bg-white outline-none focus:border-primary"

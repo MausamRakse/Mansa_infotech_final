@@ -17,8 +17,7 @@ const Sidebar = () => {
           <Hexagon className="w-5 h-5 fill-current" />
         </div>
         <div className="flex flex-col">
-          <span className="font-bold text-[15px] leading-tight text-textPrimary tracking-tight">Voice AI</span>
-          <span className="text-[12px] text-textMuted leading-tight">Platform</span>
+          <span className="font-bold text-[18px] leading-tight text-textPrimary tracking-tight">convexa.ai</span>
         </div>
       </div>
 
