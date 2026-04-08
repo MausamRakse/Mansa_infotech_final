@@ -11,6 +11,7 @@ class CreateCampaignRequest(BaseModel):
     end_time: str
     time_zone: str
     custom_first_line: str
+    retries: str = "0"
 
 @router.post("/create")
 def create_campaign(req: CreateCampaignRequest):
@@ -23,8 +24,10 @@ def create_campaign(req: CreateCampaignRequest):
             start_time=req.start_time,
             end_time=req.end_time,
             time_zone=req.time_zone,
-            custom_first_line=req.custom_first_line
+            custom_first_line=req.custom_first_line,
+            retries=req.retries
         )
         return result
     except Exception as e:
+        print(f"DEBUG: Campaign creation failed with error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))

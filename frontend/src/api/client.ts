@@ -56,6 +56,7 @@ export interface CreateCampaignPayload {
   end_time: string;
   time_zone: string;
   custom_first_line: string;
+  retries: string;
 }
 
 export interface Agent {

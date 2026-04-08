@@ -112,21 +112,27 @@ def fetch_call_logs(agent_id, limit=50):
     return r.json().get("data", [])
 
 
-def create_campaign(campaign_name, agent_id, start_time, end_time, time_zone, custom_first_line):
+def create_campaign(campaign_name, agent_id, start_time, end_time, time_zone, custom_first_line, retries="0"):
     """
     Maps to: POST https://www.tabbly.io/dashboard/agents/endpoints/create-campaign
     """
     payload = {
         "api_key": TABBLY_API_KEY,
+        "organization_id": int(os.getenv("TABBLY_ORG_ID")),
+        "created_by": int(os.getenv("TABBLY_ORG_ID")), # Bypasses the 'API' string error
         "campaign_name": campaign_name,
         "agent_id": int(agent_id),
         "start_time": start_time,
         "end_time": end_time,
         "time_zone": time_zone,
         "custom_first_line": custom_first_line,
+        "retries": int(retries)
     }
+    print(f"DEBUG: Tabbly Campaign Payload (JSON): {payload}")
     r = requests.post(f"{BASE}/dashboard/agents/endpoints/create-campaign",
                       headers={"Content-Type": "application/json"},
                       json=payload)
+    if r.status_code != 200:
+        print(f"DEBUG: Tabbly Error Response: {r.text}")
     r.raise_for_status()
     return r.json()

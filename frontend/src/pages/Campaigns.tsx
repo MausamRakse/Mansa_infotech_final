@@ -83,7 +83,8 @@ const Campaigns = () => {
         start_time: formData.start_time,
         end_time: formData.end_time,
         time_zone: formData.time_zone,
-        custom_first_line: formData.custom_first_line
+        custom_first_line: formData.custom_first_line,
+        retries: formData.retries
       });
 
       console.log('Campaign Created:', response);
