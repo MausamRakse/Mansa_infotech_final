@@ -24,11 +24,22 @@ app.include_router(campaigns.router, prefix="/api")
 # Serve the static React build inside the unified server
 frontend_dist = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../frontend/dist")
 
-# Only mount if dist exists (e.g., after building for Production)
 if os.path.exists(frontend_dist):
-    app.mount("/assets", StaticFiles(directory=os.path.join(frontend_dist, "assets")), name="assets")
+    # Mount the assets directory specifically for faster serving
+    assets_path = os.path.join(frontend_dist, "assets")
+    if os.path.exists(assets_path):
+        app.mount("/assets", StaticFiles(directory=assets_path), name="assets")
     
+    # Catch-all route to serve the frontend for any other path (React Router support)
     @app.get("/{full_path:path}")
-    def serve_frontend(full_path: str):
-        # Fallback to index.html for React Router
+    async def serve_frontend(full_path: str):
+        # If the file exists in dist, serve it (for favicon, manifest, etc.)
+        file_path = os.path.join(frontend_dist, full_path)
+        if os.path.isfile(file_path):
+            return FileResponse(file_path)
+        # Otherwise, fall back to index.html for CSR
         return FileResponse(os.path.join(frontend_dist, "index.html"))
+else:
+    @app.get("/")
+    def read_root():
+        return {"message": "API is running. Build the frontend to serve the dashboard."}
