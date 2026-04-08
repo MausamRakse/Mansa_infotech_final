@@ -366,18 +366,14 @@ const Campaigns = () => {
 
                <div className="md:col-span-3 space-y-3">
                   <label className="text-[14px] font-bold text-textPrimary">Execution Time Zone</label>
-                  <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
-                    {timeZones.slice(0, 12).map(tz => (
-                      <button
-                        key={tz}
-                        type="button"
-                        onClick={() => setFormData({...formData, time_zone: tz})}
-                        className={`py-3 rounded-xl border-2 font-bold text-[13px] transition-all ${formData.time_zone === tz ? 'border-primary bg-primary text-white shadow-md' : 'border-border text-textMuted hover:border-textMuted'}`}
-                      >
-                        {tz}
-                      </button>
-                    ))}
-                  </div>
+                  <select
+                    className="w-full h-14 px-5 rounded-2xl border border-border outline-none font-bold focus:ring-4 focus:ring-primary/5 appearance-none bg-white cursor-pointer transition-all"
+                    value={formData.time_zone}
+                    onChange={(e) => setFormData({...formData, time_zone: e.target.value})}
+                  >
+                    {timeZones.map(tz => <option key={tz} value={tz}>{tz}</option>)}
+                  </select>
+                  <p className="text-[11px] text-textMuted leading-relaxed">System will use this time zone to calculate your start/end windows.</p>
                </div>
             </div>
         </div>
