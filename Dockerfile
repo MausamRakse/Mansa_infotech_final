@@ -1,5 +1,5 @@
 # Stage 1: Build the frontend (React)
-FROM node:20 AS frontend-builder
+FROM node:20-alpine AS frontend-builder
 WORKDIR /app/frontend
 COPY frontend/package*.json ./
 RUN npm install
@@ -10,12 +10,17 @@ RUN npm run build
 FROM python:3.10-slim
 WORKDIR /app
 
+# Install system dependencies (if needed, e.g., for some python packages)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
 # Install backend dependencies
 COPY backend/requirements.txt ./backend/
 RUN pip install --no-cache-dir -r ./backend/requirements.txt
 
 # Copy the built frontend from Stage 1 to the backend's relative path
-# The backend expects it at ../frontend/dist/
+# The backend expects it at ../frontend/dist/ relative to main.py
 COPY --from=frontend-builder /app/frontend/dist ./frontend/dist
 
 # Copy backend code
@@ -24,9 +29,9 @@ COPY backend/ ./backend/
 # Set working directory to backend to run the server
 WORKDIR /app/backend
 
-# Expose the standard port
+# Expose the port (Render provides $PORT)
 EXPOSE 8000
 
 # Use uvicorn to start the app
-# Render will provide the $PORT environment variable, so we bind to it
-CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port $PORT"]
+# Binding to 0.0.0.0 and using $PORT for Render compatibility
+CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}"]

@@ -2,6 +2,16 @@ services:
   - type: web
     name: mansa-dashboard
     runtime: docker
+    plan: free
+    region: oregon
     envVars:
-      - key: PYTHON_VERSION
-        value: 3.10.0
+      - key: TABBLY_API_KEY
+        sync: false
+      - key: TABBLY_ORG_ID
+        sync: false
+      - key: TABBLY_CALL_FROM_NUMBER
+        sync: false
+      - key: MONGO_URI
+        sync: false
+      - key: PORT
+        value: 8000
