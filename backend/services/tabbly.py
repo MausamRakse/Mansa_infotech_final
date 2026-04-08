@@ -110,3 +110,23 @@ def fetch_call_logs(agent_id, limit=50):
     r = requests.get(f"{BASE}/dashboard/agents/endpoints/call-logs-v2", params=params)
     r.raise_for_status()
     return r.json().get("data", [])
+
+
+def create_campaign(campaign_name, agent_id, start_time, end_time, time_zone, custom_first_line):
+    """
+    Maps to: POST https://www.tabbly.io/dashboard/agents/endpoints/create-campaign
+    """
+    payload = {
+        "api_key": TABBLY_API_KEY,
+        "campaign_name": campaign_name,
+        "agent_id": int(agent_id),
+        "start_time": start_time,
+        "end_time": end_time,
+        "time_zone": time_zone,
+        "custom_first_line": custom_first_line,
+    }
+    r = requests.post(f"{BASE}/dashboard/agents/endpoints/create-campaign",
+                      headers={"Content-Type": "application/json"},
+                      json=payload)
+    r.raise_for_status()
+    return r.json()

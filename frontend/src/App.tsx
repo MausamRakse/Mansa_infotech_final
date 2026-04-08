@@ -5,6 +5,7 @@ import Dashboard from './pages/Dashboard';
 import Agents from './pages/Agents';
 import CallLogs from './pages/CallLogs';
 import Settings from './pages/Settings';
+import Campaigns from './pages/Campaigns';
 import Landing from './pages/Landing';
 import Login from './pages/Login';
 
@@ -36,6 +37,7 @@ function App() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/agents" element={<Agents />} />
           <Route path="/logs" element={<CallLogs />} />
+          <Route path="/campaigns" element={<Campaigns />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

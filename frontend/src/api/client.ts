@@ -27,6 +27,9 @@ export const updateAgentApi = (data: UpdateAgentPayload) =>
 export const deleteAgentApi = (agent_id: string) =>
   api.post("/agents/delete-agent", { agent_id }).then(r => r.data);
 
+export const createCampaign = (data: CreateCampaignPayload) =>
+  api.post("/campaigns/create", data).then(r => r.data);
+
 export interface CreateAgentPayload {
   agent_name: string;
   custom_first_line: string;
@@ -44,6 +47,15 @@ export interface TriggerCallPayload {
   agent_id: string;
   phone_number: string;
   custom_first_line?: string;
+}
+
+export interface CreateCampaignPayload {
+  campaign_name: string;
+  agent_id: string;
+  start_time: string;
+  end_time: string;
+  time_zone: string;
+  custom_first_line: string;
 }
 
 export interface Agent {

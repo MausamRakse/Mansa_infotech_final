@@ -1,10 +1,11 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Bot, PhoneCall, Settings, LogOut, Hexagon } from 'lucide-react';
+import { LayoutDashboard, Bot, PhoneCall, Settings, LogOut, Hexagon, Megaphone } from 'lucide-react';
 
 const Sidebar = () => {
   const navItems = [
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
     { name: 'Agents', path: '/agents', icon: Bot },
+    { name: 'Campaigns', path: '/campaigns', icon: Megaphone },
     { name: 'Call Logs', path: '/logs', icon: PhoneCall },
     { name: 'Settings', path: '/settings', icon: Settings },
   ];
