@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Upload, Download, Calendar, Clock, Globe, Rocket, HelpCircle, FileSpreadsheet, CheckCircle2, ChevronRight, AlertCircle, Trash2, Settings as SettingsIcon, MessageSquare, Terminal } from 'lucide-react';
+import { Upload, Download, Clock, Rocket, FileSpreadsheet, CheckCircle2, ChevronRight, AlertCircle, MessageSquare, Terminal } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { listAgents, createCampaign, type Agent } from '../api/client';
 import toast from 'react-hot-toast';
