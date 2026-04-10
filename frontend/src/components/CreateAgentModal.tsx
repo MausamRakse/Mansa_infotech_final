@@ -50,48 +50,48 @@ const CreateAgentModal = ({ onClose }: Props) => {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity" />
       <div
-        className="relative bg-white rounded-[16px] w-full max-w-[700px] shadow-xl flex flex-col animate-in zoom-in-95 duration-200"
+        className="relative bg-surface rounded-[16px] w-full max-w-[700px] shadow-2xl flex flex-col animate-in zoom-in-95 duration-200 border border-border/50"
         onClick={e => e.stopPropagation()}
       >
         <div className="px-6 py-5 border-b border-border flex items-center justify-between">
-          <h2 className="text-[18px] font-bold text-textPrimary">Create an Agent</h2>
-          <button onClick={onClose} className="p-1 rounded-md text-textMuted hover:bg-surface transition-colors">
+          <h2 className="text-[18px] font-bold text-surface-foreground">Create an Agent</h2>
+          <button onClick={onClose} className="p-1 rounded-md text-textMuted hover:bg-muted transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 flex flex-col gap-4 overflow-y-auto max-h-[85vh]">
           <div className="flex flex-col gap-1.5">
-            <label className="text-[13px] font-semibold text-textPrimary">Agent Name</label>
+            <label className="text-[13px] font-semibold text-surface-foreground">Agent Name</label>
             <input
               type="text"
               value={formData.agent_name}
               onChange={e => setFormData({ ...formData, agent_name: e.target.value })}
-              className={`border rounded-[8px] px-3 py-2 text-[14px] bg-white outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all ${errors.agent_name ? 'border-error' : 'border-border'}`}
+              className={`border rounded-[8px] px-3 py-2 text-[14px] bg-muted/30 text-surface-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all ${errors.agent_name ? 'border-error' : 'border-border'}`}
               placeholder="e.g. Sales Representative"
             />
             {errors.agent_name && <span className="text-[12px] text-error">Required field</span>}
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-[13px] font-semibold text-textPrimary">Greeting / First Line</label>
+            <label className="text-[13px] font-semibold text-surface-foreground">Greeting / First Line</label>
             <input
               type="text"
               value={formData.custom_first_line}
               onChange={e => setFormData({ ...formData, custom_first_line: e.target.value })}
-              className={`border rounded-[8px] px-3 py-2 text-[14px] bg-white outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all ${errors.custom_first_line ? 'border-error' : 'border-border'}`}
+              className={`border rounded-[8px] px-3 py-2 text-[14px] bg-muted/30 text-surface-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all ${errors.custom_first_line ? 'border-error' : 'border-border'}`}
               placeholder="e.g. Hello, how can I help you today?"
             />
             {errors.custom_first_line && <span className="text-[12px] text-error">Required field</span>}
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-[13px] font-semibold text-textPrimary">Agent Prompt</label>
+            <label className="text-[13px] font-semibold text-surface-foreground">Agent Prompt</label>
             <textarea
               value={formData.prompt_text}
               onChange={e => setFormData({ ...formData, prompt_text: e.target.value })}
               rows={12}
-              className={`border rounded-[8px] px-3 py-2 text-[14px] bg-white outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all resize-none ${errors.prompt_text ? 'border-error' : 'border-border'}`}
+              className={`border rounded-[8px] px-3 py-2 text-[14px] bg-muted/30 text-surface-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all resize-none ${errors.prompt_text ? 'border-error' : 'border-border'}`}
               placeholder="Describe the agent's persona, goals, and behavior..."
             />
             {errors.prompt_text && <span className="text-[12px] text-error">Required field</span>}
@@ -99,11 +99,11 @@ const CreateAgentModal = ({ onClose }: Props) => {
 
           <div className="grid grid-cols-2 gap-4">
             <div className="flex flex-col gap-1.5">
-              <label className="text-[13px] font-semibold text-textPrimary">Language</label>
+              <label className="text-[13px] font-semibold text-surface-foreground">Language</label>
               <select
                 value={formData.stt_language}
                 onChange={e => setFormData({ ...formData, stt_language: e.target.value })}
-                className="border border-border rounded-[8px] px-3 py-2 text-[14px] bg-white outline-none focus:border-primary"
+                className="border border-border rounded-[8px] px-3 py-2 text-[14px] bg-muted/30 text-surface-foreground outline-none focus:border-primary"
               >
                 <option value="en">English (en)</option>
                 <option value="hi">Hindi (hi)</option>
@@ -112,11 +112,11 @@ const CreateAgentModal = ({ onClose }: Props) => {
               </select>
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-[13px] font-semibold text-textPrimary">Voice Options</label>
+              <label className="text-[13px] font-semibold text-surface-foreground">Voice Options</label>
               <select
                 value={formData.voice_id}
                 onChange={e => setFormData({ ...formData, voice_id: parseInt(e.target.value) })}
-                className="border border-border rounded-[8px] px-3 py-2 text-[14px] bg-white outline-none focus:border-primary"
+                className="border border-border rounded-[8px] px-3 py-2 text-[14px] bg-muted/30 text-surface-foreground outline-none focus:border-primary"
               >
                 <option value={1}>Voice 1 (Female)</option>
                 <option value={2}>Voice 2 (Male)</option>
@@ -127,7 +127,7 @@ const CreateAgentModal = ({ onClose }: Props) => {
 
           <div className="flex items-center justify-between mt-2 py-3 border-t border-border text-[14px]">
             <div className="flex flex-col">
-              <span className="font-semibold text-textPrimary">Meeting Booking</span>
+              <span className="font-semibold text-surface-foreground">Meeting Booking</span>
               <span className="text-[12px] text-textMuted">Allow agent to access Cal.com slots</span>
             </div>
             <button

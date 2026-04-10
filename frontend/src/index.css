@@ -4,14 +4,19 @@
 
 @layer base {
   :root {
-    --primary: #0d9488;
-    --primary-hover: #0f766e;
-    --primary-light: #f0fdf9;
-    --bg: #ffffff;
-    --surface: #f8fafc;
-    --border: #e2e8f0;
-    --text-primary: #0f172a;
-    --text-muted: #64748b;
+    --primary: #0284C7;
+    --primary-hover: #0369a1;
+    --primary-foreground: #FFFFFF;
+    --secondary: #E0F2FE;
+    --secondary-foreground: #0C4A6E;
+    --bg: #F0F9FF;
+    --surface: #FFFFFF;
+    --surface-foreground: #0C4A6E;
+    --border: #BAE6FD;
+    --text-muted: #64748B;
+    --accent: #14B8A6;
+    --accent-foreground: #FFFFFF;
+    --muted: #E0F2FE;
     --success: #22c55e;
     --error: #ef4444;
     --warning: #f59e0b;
@@ -19,7 +24,7 @@
 
   body {
     background-color: var(--bg);
-    color: var(--text-primary);
+    color: var(--surface-foreground);
     font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     @apply antialiased text-[14px] leading-[1.6];
   }
@@ -41,11 +46,11 @@
 
 @layer components {
   .btn-primary {
-    @apply bg-[#0d9488] text-white hover:bg-[#0f766e] rounded-lg px-4 py-2 font-medium transition-colors;
+    @apply bg-primary text-primary-foreground hover:bg-primary-hover rounded-lg px-4 py-2 font-medium transition-colors;
   }
 
   .btn-outline {
-    @apply border border-[#e2e8f0] bg-white hover:bg-[#f8fafc] rounded-lg px-4 py-2 font-medium transition-colors;
+    @apply border border-border bg-surface hover:bg-muted rounded-lg px-4 py-2 font-medium transition-colors;
   }
 
   .card-shadow {

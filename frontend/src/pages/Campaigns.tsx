@@ -105,15 +105,15 @@ const Campaigns = () => {
     <div className="max-w-6xl mx-auto pb-20">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-[28px] font-bold text-textPrimary mb-2">Campaign Center</h1>
+        <h1 className="text-[28px] font-bold text-surface-foreground mb-2">Campaign Center</h1>
         <p className="text-textMuted text-[16px]">Launch and manage automated voice outreach at scale.</p>
       </div>
 
       {/* NEW Topmost Launch Summary Section */}
-      <div className="bg-white rounded-[24px] p-6 border border-border shadow-md mb-10 flex flex-col md:flex-row items-center gap-6 justify-between animate-in fade-in slide-in-from-top-4 duration-500">
+      <div className="bg-surface rounded-[24px] p-6 border border-border shadow-md mb-10 flex flex-col md:flex-row items-center gap-6 justify-between animate-in fade-in slide-in-from-top-4 duration-500">
         <div className="flex flex-wrap gap-8">
           <div className="flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${formData.campaign_name ? 'bg-success/10 text-success' : 'bg-surface text-textMuted opacity-50'}`}>
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${formData.campaign_name ? 'bg-success/10 text-success' : 'bg-muted text-textMuted opacity-50'}`}>
               <Rocket className="w-5 h-5" />
             </div>
             <div>
@@ -123,7 +123,7 @@ const Campaigns = () => {
           </div>
 
           <div className="flex items-center gap-3 border-l border-border pl-8">
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${previewData.length > 0 ? 'bg-success/10 text-success' : 'bg-surface text-textMuted opacity-50'}`}>
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${previewData.length > 0 ? 'bg-success/10 text-success' : 'bg-muted text-textMuted opacity-50'}`}>
               <FileSpreadsheet className="w-5 h-5" />
             </div>
             <div>
@@ -133,7 +133,7 @@ const Campaigns = () => {
           </div>
 
           <div className="flex items-center gap-3 border-l border-border pl-8">
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${formData.agent_id ? 'bg-success/10 text-success' : 'bg-surface text-textMuted opacity-50'}`}>
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${formData.agent_id ? 'bg-success/10 text-success' : 'bg-muted text-textMuted opacity-50'}`}>
               <Terminal className="w-5 h-5" />
             </div>
             <div>
@@ -150,11 +150,11 @@ const Campaigns = () => {
             px-10 py-4 rounded-xl font-bold text-[16px] flex items-center justify-center gap-2 transition-all min-w-[200px]
             ${submitting 
               ? 'bg-primary/50 cursor-not-allowed' 
-              : 'bg-primary text-white hover:bg-primary-dark hover:scale-[1.05] active:scale-[0.98] shadow-lg shadow-primary/20'}
+              : 'bg-primary text-primary-foreground hover:bg-primary-hover hover:scale-[1.05] active:scale-[0.98] shadow-lg shadow-primary/20'}
           `}
         >
           {submitting ? (
-            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            <div className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
           ) : (
             <>
               Launch Campaign
@@ -167,15 +167,15 @@ const Campaigns = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         
         {/* Section 1: Campaign Details */}
-        <div className="bg-white rounded-[24px] p-8 border border-border shadow-sm">
+        <div className="bg-surface rounded-[24px] p-8 border border-border shadow-sm">
           <div className="flex items-center gap-3 mb-8">
-            <div className="w-10 h-10 rounded-xl bg-primary-light flex items-center justify-center text-primary font-bold">1</div>
-            <h2 className="text-[18px] font-bold">Primary Details</h2>
+            <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center text-primary font-bold">1</div>
+            <h2 className="text-[18px] font-bold text-surface-foreground">Primary Details</h2>
           </div>
           
           <div className="space-y-6">
             <div className="space-y-2">
-              <label className="text-[14px] font-bold text-textPrimary">Campaign Name</label>
+              <label className="text-[14px] font-bold text-surface-foreground">Campaign Name</label>
               <input
                 type="text"
                 required
@@ -187,10 +187,10 @@ const Campaigns = () => {
             </div>
 
             <div className="space-y-2">
-              <label className="text-[14px] font-bold text-textPrimary">Select Voice Agent</label>
+              <label className="text-[14px] font-bold text-surface-foreground">Select Voice Agent</label>
               <select
                 required
-                className="w-full h-14 px-5 rounded-2xl border border-border focus:border-primary focus:ring-4 focus:ring-primary/5 outline-none bg-white transition-all appearance-none cursor-pointer text-lg"
+                className="w-full h-14 px-5 rounded-2xl border border-border focus:border-primary focus:ring-4 focus:ring-primary/5 outline-none bg-surface transition-all appearance-none cursor-pointer text-lg"
                 value={formData.agent_id}
                 onChange={(e) => setFormData({...formData, agent_id: e.target.value})}
               >
@@ -202,15 +202,15 @@ const Campaigns = () => {
         </div>
 
         {/* Section 2: Prompt & Script Section */}
-        <div className="bg-white rounded-[24px] p-8 border border-border shadow-sm">
+        <div className="bg-surface rounded-[24px] p-8 border border-border shadow-sm">
           <div className="flex items-center gap-3 mb-8">
-            <div className="w-10 h-10 rounded-xl bg-primary-light flex items-center justify-center text-primary font-bold">2</div>
-            <h2 className="text-[18px] font-bold">Agent Script & Prompt</h2>
+            <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center text-primary font-bold">2</div>
+            <h2 className="text-[18px] font-bold text-surface-foreground">Agent Script & Prompt</h2>
           </div>
           
           <div className="space-y-6">
             <div className="space-y-2">
-              <label className="text-[14px] font-bold text-textPrimary flex items-center gap-2">
+              <label className="text-[14px] font-bold text-surface-foreground flex items-center gap-2">
                 <MessageSquare className="w-4 h-4 text-primary" />
                 Custom First Line
               </label>
@@ -224,13 +224,13 @@ const Campaigns = () => {
             </div>
 
             <div className="space-y-2">
-              <label className="text-[14px] font-bold text-textPrimary flex items-center gap-2">
+              <label className="text-[14px] font-bold text-surface-foreground flex items-center gap-2">
                 <Terminal className="w-4 h-4 text-primary" />
                 System Prompt (Structure)
               </label>
               <textarea
                 placeholder="Define how the agent should behave..."
-                className="w-full h-24 p-5 rounded-2xl border border-border outline-none focus:ring-4 focus:ring-primary/5 resize-none text-[14px] font-mono leading-relaxed"
+                className="w-full h-24 p-5 rounded-2xl border border-border bg-muted/30 outline-none focus:ring-4 focus:ring-primary/5 resize-none text-[14px] font-mono leading-relaxed"
                 value={formData.prompt_text}
                 onChange={(e) => setFormData({...formData, prompt_text: e.target.value})}
               />
@@ -239,11 +239,11 @@ const Campaigns = () => {
         </div>
 
         {/* Section 3: Contact List (FULL WIDTH-ish) */}
-        <div className="lg:col-span-2 bg-white rounded-[24px] p-8 border border-border shadow-sm">
+        <div className="lg:col-span-2 bg-surface rounded-[24px] p-8 border border-border shadow-sm">
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-primary-light flex items-center justify-center text-primary font-bold">3</div>
-              <h2 className="text-[18px] font-bold">Audience & Contact List</h2>
+              <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center text-primary font-bold">3</div>
+              <h2 className="text-[18px] font-bold text-surface-foreground">Audience & Contact List</h2>
             </div>
             <a href="#" className="text-primary text-[14px] hover:underline flex items-center gap-2 font-bold px-4 py-2 bg-primary/5 rounded-lg">
               <Download className="w-4 h-4" />
@@ -259,8 +259,8 @@ const Campaigns = () => {
               {previewData.length > 0 ? <CheckCircle2 className="w-8 h-8" /> : <Upload className="w-8 h-8" />}
             </div>
             <div className="text-center">
-              <p className="font-bold text-xl mb-1">Upload Contacts</p>
-              <p className="text-textMuted text-[15px]">Select a <span className="font-bold text-textPrimary">.CSV</span> or <span className="font-bold text-textPrimary">.XLSX</span> file to begin.</p>
+              <p className="font-bold text-xl mb-1 text-surface-foreground">Upload Contacts</p>
+              <p className="text-textMuted text-[15px]">Select a <span className="font-bold text-surface-foreground">.CSV</span> or <span className="font-bold text-surface-foreground">.XLSX</span> file to begin.</p>
             </div>
             
             <input
@@ -272,7 +272,7 @@ const Campaigns = () => {
             />
             <label
               htmlFor="campaign-upload"
-              className="px-10 py-4 bg-white text-textPrimary border-2 border-border rounded-xl hover:border-primary hover:text-primary transition-all cursor-pointer font-bold text-[15px] shadow-sm active:scale-95"
+              className="px-10 py-4 bg-surface text-surface-foreground border-2 border-border rounded-xl hover:border-primary hover:text-primary transition-all cursor-pointer font-bold text-[15px] shadow-sm active:scale-95"
             >
               {previewData.length > 0 ? 'Replace file' : 'Browse Files'}
             </label>
@@ -319,17 +319,17 @@ const Campaigns = () => {
         </div>
 
         {/* Section 4: Settings & Schedule */}
-        <div className="lg:col-span-2 bg-white rounded-[24px] p-8 border border-border shadow-sm">
+        <div className="lg:col-span-2 bg-surface rounded-[24px] p-8 border border-border shadow-sm">
            <div className="flex items-center gap-3 mb-10">
-              <div className="w-10 h-10 rounded-xl bg-primary-light flex items-center justify-center text-primary font-bold">4</div>
-              <h2 className="text-[18px] font-bold">Execution Settings</h2>
+              <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center text-primary font-bold">4</div>
+              <h2 className="text-[18px] font-bold text-surface-foreground">Execution Settings</h2>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
                <div className="space-y-3">
-                  <label className="text-[14px] font-bold text-textPrimary">Recall / Retries</label>
+                  <label className="text-[14px] font-bold text-surface-foreground">Recall / Retries</label>
                   <select
-                    className="w-full h-14 px-5 rounded-2xl border border-border outline-none font-bold focus:ring-4 focus:ring-primary/5 appearance-none bg-white"
+                    className="w-full h-14 px-5 rounded-2xl border border-border outline-none font-bold focus:ring-4 focus:ring-primary/5 appearance-none bg-surface"
                     value={formData.retries}
                     onChange={(e) => setFormData({...formData, retries: e.target.value})}
                   >
@@ -341,8 +341,8 @@ const Campaigns = () => {
                   <p className="text-[11px] text-textMuted leading-relaxed">System will retry failed/busy calls automatically.</p>
                </div>
 
-               <div className="space-y-3">
-                  <label className="text-[14px] font-bold text-textPrimary flex items-center gap-2">
+                <div className="space-y-3">
+                  <label className="text-[14px] font-bold text-surface-foreground flex items-center gap-2">
                     Start Window <Clock className="w-4 h-4 text-primary" />
                   </label>
                   <input
@@ -353,8 +353,8 @@ const Campaigns = () => {
                   />
                </div>
 
-               <div className="space-y-3">
-                  <label className="text-[14px] font-bold text-textPrimary flex items-center gap-2">
+                <div className="space-y-3">
+                  <label className="text-[14px] font-bold text-surface-foreground flex items-center gap-2">
                     End Window <Clock className="w-4 h-4 text-primary" />
                   </label>
                   <input
@@ -365,10 +365,10 @@ const Campaigns = () => {
                   />
                </div>
 
-               <div className="md:col-span-3 space-y-3">
-                  <label className="text-[14px] font-bold text-textPrimary">Execution Time Zone</label>
+                <div className="md:col-span-3 space-y-3">
+                  <label className="text-[14px] font-bold text-surface-foreground">Execution Time Zone</label>
                   <select
-                    className="w-full h-14 px-5 rounded-2xl border border-border outline-none font-bold focus:ring-4 focus:ring-primary/5 appearance-none bg-white cursor-pointer transition-all"
+                    className="w-full h-14 px-5 rounded-2xl border border-border outline-none font-bold focus:ring-4 focus:ring-primary/5 appearance-none bg-surface cursor-pointer transition-all"
                     value={formData.time_zone}
                     onChange={(e) => setFormData({...formData, time_zone: e.target.value})}
                   >
@@ -383,9 +383,9 @@ const Campaigns = () => {
       {/* Warning Footer */}
       <div className="mt-8 flex items-center justify-center gap-3 p-6 bg-primary/5 rounded-[24px] border border-primary/10 max-w-2xl mx-auto">
          <AlertCircle className="w-6 h-6 text-primary shrink-0" />
-         <p className="text-[14px] text-textMuted font-medium text-center">
-           Ready to go? Double check your <span className="font-bold text-textPrimary">Start/End windows</span> and <span className="font-bold text-textPrimary">Time Zone</span> before clicking Launch.
-         </p>
+          <p className="text-[14px] text-textMuted font-medium text-center">
+            Ready to go? Double check your <span className="font-bold text-surface-foreground">Start/End windows</span> and <span className="font-bold text-surface-foreground">Time Zone</span> before clicking Launch.
+          </p>
       </div>
     </div>
   );

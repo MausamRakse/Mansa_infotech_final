@@ -6,6 +6,9 @@ TABBLY_API_KEY  = os.getenv("TABBLY_API_KEY")
 TABBLY_ORG_ID   = os.getenv("TABBLY_ORG_ID")
 TABBLY_CALL_FROM = os.getenv("TABBLY_CALL_FROM_NUMBER")
 
+if not TABBLY_ORG_ID:
+    raise ValueError("TABBLY_ORG_ID not set")
+
 BASE = "https://www.tabbly.io"
 
 def create_agent(agent_name, custom_first_line, prompt_text,
@@ -112,27 +115,40 @@ def fetch_call_logs(agent_id, limit=50):
     return r.json().get("data", [])
 
 
-def create_campaign(campaign_name, agent_id, start_time, end_time, time_zone, custom_first_line, retries="0"):
+def create_campaign(campaign_name, agent_id, start_time, end_time, time_zone, custom_first_line):
     """
     Maps to: POST https://www.tabbly.io/dashboard/agents/endpoints/create-campaign
+    Includes enhanced headers and explicit ID mapping to resolve the 'created_by' SQL error.
     """
     payload = {
-        "api_key": TABBLY_API_KEY,
-        "organization_id": int(os.getenv("TABBLY_ORG_ID")),
-        "created_by": int(os.getenv("TABBLY_ORG_ID")), # Bypasses the 'API' string error
         "campaign_name": campaign_name,
         "agent_id": int(agent_id),
-        "start_time": start_time,
-        "end_time": end_time,
-        "time_zone": time_zone,
+        "start_time": f"{start_time}",
+        "end_time": f"{end_time}",
+        "time_zone": f"{time_zone}",
         "custom_first_line": custom_first_line,
-        "retries": int(retries)
+        "api_key": TABBLY_API_KEY,
+        "created_by": int(TABBLY_ORG_ID)
     }
-    print(f"DEBUG: Tabbly Campaign Payload (JSON): {payload}")
-    r = requests.post(f"{BASE}/dashboard/agents/endpoints/create-campaign",
-                      headers={"Content-Type": "application/json"},
-                      json=payload)
+
+    print("FINAL PAYLOAD:", payload)
+    r = requests.post(
+        f"{BASE}/dashboard/agents/endpoints/create-campaign",
+        headers={
+            "Content-Type": "application/json"
+        },
+        json=payload
+    )
+
+    print("STATUS:", r.status_code)
+    print("RAW RESPONSE:", r.text)
+
+    try:
+        response = r.json()
+    except Exception:
+        raise Exception(f"Non-JSON response from Tabbly: {r.text}")
+
     if r.status_code != 200:
-        print(f"DEBUG: Tabbly Error Response: {r.text}")
-    r.raise_for_status()
-    return r.json()
+        raise Exception(response.get("message", r.text) if isinstance(response, dict) else r.text)
+
+    return response

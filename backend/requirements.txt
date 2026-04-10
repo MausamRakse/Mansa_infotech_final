@@ -5,3 +5,5 @@ python-dotenv
 pymongo
 urllib3<2
 aiofiles
+supabase
+psycopg2-binary

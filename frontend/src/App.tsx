@@ -1,5 +1,7 @@
+import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
+import { supabase } from './lib/supabase';
 import Sidebar from './components/Sidebar';
 import Dashboard from './pages/Dashboard';
 import Agents from './pages/Agents';
@@ -18,13 +20,45 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-surface text-textPrimary font-sans">
+    <div className="flex h-screen overflow-hidden bg-bg text-surface-foreground font-sans">
       <Sidebar />
       <main className="flex-1 overflow-y-auto p-8 border-l border-border bg-bg">
         {children}
       </main>
     </div>
   );
+};
+
+const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+  const [session, setSession] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setLoading(false);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="h-screen w-screen flex items-center justify-center bg-bg">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (!session) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return <>{children}</>;
 };
 
 function App() {
@@ -34,11 +68,11 @@ function App() {
         <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/login" element={<Login />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/agents" element={<Agents />} />
-          <Route path="/logs" element={<CallLogs />} />
-          <Route path="/campaigns" element={<Campaigns />} />
-          <Route path="/settings" element={<Settings />} />
+          <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+          <Route path="/agents" element={<ProtectedRoute><Agents /></ProtectedRoute>} />
+          <Route path="/logs" element={<ProtectedRoute><CallLogs /></ProtectedRoute>} />
+          <Route path="/campaigns" element={<ProtectedRoute><Campaigns /></ProtectedRoute>} />
+          <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Layout>

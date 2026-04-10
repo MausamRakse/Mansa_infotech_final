@@ -1,4 +1,5 @@
 import axios from "axios";
+import { supabase } from "../lib/supabase";
 
 const isProd = import.meta.env.PROD;
 // In production, everything shares the same origin. In dev, we use the local FastAPI server.
@@ -7,6 +8,15 @@ const devUrl = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
 const api = axios.create({
   baseURL: isProd ? "/api" : `${devUrl}/api`,
   headers: { "Content-Type": "application/json" },
+});
+
+// Interceptor to add Supabase token
+api.interceptors.request.use(async (config) => {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session?.access_token) {
+    config.headers.Authorization = `Bearer ${session.access_token}`;
+  }
+  return config;
 });
 
 export const createAgent = (data: CreateAgentPayload) =>
@@ -18,8 +28,15 @@ export const listAgents = () =>
 export const triggerCall = (data: TriggerCallPayload) =>
   api.post("/calls/trigger-call", data).then(r => r.data);
 
-export const fetchCallLogs = (limit = 50) =>
-  api.get(`/logs/call-logs?limit=${limit}`).then(r => r.data.logs);
+export const fetchCallLogs = async (limit = 50): Promise<CallLog[]> => {
+  const { data } = await api.get(`/logs/call-logs?limit=${limit}`);
+  return data.logs;
+};
+
+export const fetchStats = async (): Promise<{ total_calls: number; total_completed: number; active_agents: number }> => {
+  const { data } = await api.get('/logs/stats');
+  return data;
+};
 
 export const updateAgentApi = (data: UpdateAgentPayload) =>
   api.post("/agents/update-agent", data).then(r => r.data);

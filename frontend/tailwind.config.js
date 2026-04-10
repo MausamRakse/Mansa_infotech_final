@@ -8,17 +8,30 @@ export default {
     extend: {
       colors: {
         primary: {
-          DEFAULT: '#0d9488',
-          hover: '#0f766e',
-          light: '#f0fdf9',
+          DEFAULT: 'var(--primary)',
+          hover: 'var(--primary-hover)',
+          foreground: 'var(--primary-foreground)',
         },
-        surface: '#f8fafc',
-        border: '#e2e8f0',
-        textPrimary: '#0f172a',
-        textMuted: '#64748b',
-        success: '#22c55e',
-        error: '#ef4444',
-        warning: '#f59e0b',
+        secondary: {
+          DEFAULT: 'var(--secondary)',
+          foreground: 'var(--secondary-foreground)',
+        },
+        surface: {
+          DEFAULT: 'var(--surface)',
+          foreground: 'var(--surface-foreground)',
+        },
+        bg: 'var(--bg)',
+        border: 'var(--border)',
+        textPrimary: 'var(--surface-foreground)',
+        textMuted: 'var(--text-muted)',
+        accent: {
+          DEFAULT: 'var(--accent)',
+          foreground: 'var(--accent-foreground)',
+        },
+        muted: 'var(--muted)',
+        success: 'var(--success)',
+        error: 'var(--error)',
+        warning: 'var(--warning)',
       },
       fontFamily: {
         sans: ['DM Sans', 'sans-serif'],
