@@ -1,9 +1,5 @@
 import axios from "axios";
-import { getSupabase, supabaseUrl, supabaseAnonKey } from "../lib/supabase";
-
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('CRITICAL: VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY is missing in Render Environment Variables!');
-}
+import { getSupabase } from "../lib/supabase";
 
 // In production, everything shares the same origin. In dev, we use the local FastAPI server.
 const devUrl = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";

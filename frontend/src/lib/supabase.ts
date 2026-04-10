@@ -1,47 +1,37 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
-export const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-export const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+let supabaseInstance: SupabaseClient | null = null;
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.warn('Supabase credentials missing. AUTH will not work correctly until VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are set in .env');
-}
-
-let supabaseInstance: any = null;
-
-export const getSupabase = async () => {
+export const getSupabase = async (): Promise<SupabaseClient> => {
   if (supabaseInstance) return supabaseInstance;
 
-  try {
-    // Try to fetch config from our own backend at runtime
-    const response = await fetch('/api/config');
-    const config = await response.json();
-    
-    const url = config.supabase_url || import.meta.env.VITE_SUPABASE_URL || 'https://placeholder.supabase.co';
-    const key = config.supabase_anon_key || import.meta.env.VITE_SUPABASE_ANON_KEY || 'placeholder';
+  let url = import.meta.env.VITE_SUPABASE_URL;
+  let key = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-    supabaseInstance = createClient(url, key, {
-      auth: {
-        persistSession: true,
-        autoRefreshToken: true,
-        detectSessionInUrl: true,
-        storageKey: 'sb-auth-token-convexa'
-      }
-    });
-    return supabaseInstance;
-  } catch (error) {
-    console.error('Failed to fetch runtime config, falling back to env vars', error);
-    supabaseInstance = createClient(
-      import.meta.env.VITE_SUPABASE_URL || 'https://placeholder.supabase.co',
-      import.meta.env.VITE_SUPABASE_ANON_KEY || 'placeholder'
-    );
-    return supabaseInstance;
+  // If env vars aren't baked in, fetch from our backend at runtime
+  if (!url || !key) {
+    try {
+      const response = await fetch('/api/config');
+      const config = await response.json();
+      url = config.supabase_url;
+      key = config.supabase_anon_key;
+    } catch (err) {
+      console.error('[Supabase] Failed to fetch runtime config:', err);
+    }
   }
+
+  if (!url || !key) {
+    throw new Error('Supabase credentials are missing. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your Render environment variables.');
+  }
+
+  supabaseInstance = createClient(url, key, {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+      storageKey: 'sb-auth-token-convexa',
+    },
+  });
+
+  return supabaseInstance;
 };
-
-// Also export a default instance for sync legacy code (might be placeholder until getSupabase is called)
-export const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL || 'https://placeholder.supabase.co',
-  import.meta.env.VITE_SUPABASE_ANON_KEY || 'placeholder'
-);
-
