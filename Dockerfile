@@ -32,6 +32,6 @@ WORKDIR /app/backend
 # Expose the port (Render provides $PORT)
 EXPOSE 8000
 
-# Use uvicorn to start the app
+# Use gunicorn to start the app for better production stability
 # Binding to 0.0.0.0 and using $PORT for Render compatibility
-CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+CMD ["sh", "-c", "gunicorn -w 4 -k uvicorn.workers.UvicornWorker main:app --bind 0.0.0.0:${PORT:-8000}"]

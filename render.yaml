@@ -11,7 +11,11 @@ services:
         sync: false
       - key: TABBLY_CALL_FROM_NUMBER
         sync: false
-      - key: MONGO_URI
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_DB_URL
         sync: false
       - key: PORT
         value: 8000
