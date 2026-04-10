@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-DB_URL = os.getenv("SUPABASE_DB_URL")
+DB_URL = os.getenv("SUPABASE_DB_URL") or "postgresql://postgres:%40Convexa_123@db.kkmftbhqfmgaixqnwked.supabase.co:5432/postgres"
 
 def get_db_connection():
     return psycopg2.connect(DB_URL)

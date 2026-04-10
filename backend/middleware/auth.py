@@ -6,8 +6,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_ANON_KEY = os.getenv("SUPABASE_ANON_KEY")
+SUPABASE_URL = os.getenv("SUPABASE_URL") or "https://kkmftbhqfmgaixqnwked.supabase.co"
+SUPABASE_ANON_KEY = os.getenv("SUPABASE_ANON_KEY") or "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtrbWZ0YmhxZm1nYWl4cW53a2VkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1NDY1MzQsImV4cCI6MjA5MTEyMjUzNH0.he9kNYN6LwB3iRUTlFdzOYBX-jejbFEUFZOJbw2rmp0"
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
 
