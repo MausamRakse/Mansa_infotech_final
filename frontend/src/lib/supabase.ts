@@ -1,37 +1,21 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
-let supabaseInstance: SupabaseClient | null = null;
+const SUPABASE_URL = 'https://kkmftbhqfmgaixqnwked.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtrbWZ0YmhxZm1nYWl4cW53a2VkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1NDY1MzQsImV4cCI6MjA5MTEyMjUzNH0.he9kNYN6LwB3iRUTlFdzOYBX-jejbFEUFZOJbw2rmp0';
+
+// Use env vars if available (local dev), otherwise fall back to hardcoded production values
+const url = import.meta.env.VITE_SUPABASE_URL || SUPABASE_URL;
+const key = import.meta.env.VITE_SUPABASE_ANON_KEY || SUPABASE_ANON_KEY;
+
+const supabaseClient: SupabaseClient = createClient(url, key, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+    storageKey: 'sb-auth-token-convexa',
+  },
+});
 
 export const getSupabase = async (): Promise<SupabaseClient> => {
-  if (supabaseInstance) return supabaseInstance;
-
-  let url = import.meta.env.VITE_SUPABASE_URL;
-  let key = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-  // If env vars aren't baked in, fetch from our backend at runtime
-  if (!url || !key) {
-    try {
-      const response = await fetch('/api/config');
-      const config = await response.json();
-      url = config.supabase_url;
-      key = config.supabase_anon_key;
-    } catch (err) {
-      console.error('[Supabase] Failed to fetch runtime config:', err);
-    }
-  }
-
-  if (!url || !key) {
-    throw new Error('Supabase credentials are missing. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your Render environment variables.');
-  }
-
-  supabaseInstance = createClient(url, key, {
-    auth: {
-      persistSession: true,
-      autoRefreshToken: true,
-      detectSessionInUrl: true,
-      storageKey: 'sb-auth-token-convexa',
-    },
-  });
-
-  return supabaseInstance;
+  return supabaseClient;
 };
