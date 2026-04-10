@@ -7,6 +7,14 @@ router = APIRouter(prefix="/users", tags=["users"])
 
 DB_URL = os.getenv("SUPABASE_DB_URL")
 
+@router.get("/config")
+def get_config():
+    """Returns public configuration for the frontend."""
+    return {
+        "supabase_url": os.getenv("SUPABASE_URL"),
+        "supabase_anon_key": os.getenv("SUPABASE_ANON_KEY")
+    }
+
 @router.get("/me")
 def get_me(user = Depends(get_current_user)):
     """Returns the current authenticated user profile from Supabase."""

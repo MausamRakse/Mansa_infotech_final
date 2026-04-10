@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
 import { LayoutDashboard, Bot, PhoneCall, Settings, LogOut, Hexagon, Megaphone, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
+import { supabase, getSupabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 
 const Sidebar = () => {
@@ -10,16 +10,21 @@ const Sidebar = () => {
   const [userName, setUserName] = useState<string | null>(null);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }: any) => {
-      if (user) {
-        setUserName(user.user_metadata?.full_name || user.email?.split('@')[0] || 'User');
-      }
-    });
+    const fetchUser = async () => {
+      const sb = await getSupabase();
+      sb.auth.getUser().then(({ data: { user } }: any) => {
+        if (user) {
+          setUserName(user.user_metadata?.full_name || user.email?.split('@')[0] || 'User');
+        }
+      });
+    };
+    fetchUser();
   }, []);
 
   const handleLogout = async () => {
     try {
-      const { error } = await supabase.auth.signOut();
+      const sb = await getSupabase();
+      const { error } = await sb.auth.signOut();
       if (error) throw error;
       toast.success('Signed out successfully');
       navigate('/login');

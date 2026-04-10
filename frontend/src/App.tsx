@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
-import { supabase } from './lib/supabase';
+import { supabase, getSupabase } from './lib/supabase';
 import Sidebar from './components/Sidebar';
 import Dashboard from './pages/Dashboard';
 import Agents from './pages/Agents';
@@ -34,16 +34,26 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }: any) => {
+    let subscription: any = null;
+
+    const initAuth = async () => {
+      const sb = await getSupabase();
+      
+      const { data: { session } } = await sb.auth.getSession();
       setSession(session);
       setLoading(false);
-    });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: any, session: any) => {
-      setSession(session);
-    });
+      const authListener = sb.auth.onAuthStateChange(async (_event: any, session: any) => {
+        setSession(session);
+      });
+      subscription = authListener.data.subscription;
+    };
 
-    return () => subscription.unsubscribe();
+    initAuth();
+
+    return () => {
+      if (subscription) subscription.unsubscribe();
+    };
   }, []);
 
   if (loading) {

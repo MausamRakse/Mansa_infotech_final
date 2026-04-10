@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { PhoneCall, Mail, Lock, Loader2, ArrowRight, User, Inbox, RefreshCw } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { supabase, getSupabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 
 const Login = () => {
@@ -37,7 +37,8 @@ const Login = () => {
     
     setResendLoading(true);
     try {
-      const { error } = await supabase.auth.resend({
+      const sb = await getSupabase();
+      const { error } = await sb.auth.resend({
         type: 'signup',
         email: email,
       });
@@ -65,8 +66,9 @@ const Login = () => {
     setLoading(true);
     
     try {
+      const sb = await getSupabase();
       if (isLogin) {
-        const { error } = await supabase.auth.signInWithPassword({
+        const { error } = await sb.auth.signInWithPassword({
           email,
           password
         });
@@ -74,7 +76,7 @@ const Login = () => {
         toast.success('Welcome back!');
         navigate('/dashboard');
       } else {
-        const { error, data } = await supabase.auth.signUp({
+        const { error, data } = await sb.auth.signUp({
           email,
           password,
           options: {

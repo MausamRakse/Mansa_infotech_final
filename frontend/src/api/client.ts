@@ -1,5 +1,5 @@
 import axios from "axios";
-import { supabase, supabaseUrl, supabaseAnonKey } from "../lib/supabase";
+import { supabase, getSupabase, supabaseUrl, supabaseAnonKey } from "../lib/supabase";
 
 if (!supabaseUrl || !supabaseAnonKey) {
   console.error('CRITICAL: VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY is missing in Render Environment Variables!');
@@ -20,7 +20,8 @@ const api = axios.create({
 
 // Interceptor to add Supabase token
 api.interceptors.request.use(async (config) => {
-  const { data: { session } } = await supabase.auth.getSession();
+  const sb = await getSupabase();
+  const { data: { session } } = await sb.auth.getSession();
   if (session?.access_token) {
     config.headers.Authorization = `Bearer ${session.access_token}`;
   }
