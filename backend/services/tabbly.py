@@ -2,9 +2,9 @@ import os, requests
 from dotenv import load_dotenv
 load_dotenv(override=True)
 
-TABBLY_API_KEY  = os.getenv("TABBLY_API_KEY")
-TABBLY_ORG_ID   = os.getenv("TABBLY_ORG_ID")
-TABBLY_CALL_FROM = os.getenv("TABBLY_CALL_FROM_NUMBER")
+TABBLY_API_KEY   = os.getenv("TABBLY_API_KEY") or "9b7ab5018a92b409"
+TABBLY_ORG_ID    = os.getenv("TABBLY_ORG_ID") or "2470"
+TABBLY_CALL_FROM = os.getenv("TABBLY_CALL_FROM_NUMBER") or "+918035736739"
 
 if not TABBLY_ORG_ID:
     raise ValueError("TABBLY_ORG_ID not set")
