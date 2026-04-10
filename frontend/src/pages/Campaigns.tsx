@@ -38,21 +38,13 @@ const Campaigns = () => {
     }
   }, [formData.agent_id, agents]);
 
-  const [agentLoadError, setAgentLoadError] = useState(false);
-  const [agentsLoading, setAgentsLoading] = useState(true);
-
   const loadAgents = async () => {
-    setAgentsLoading(true);
-    setAgentLoadError(false);
     try {
       const data = await listAgents();
       setAgents(data || []);
     } catch (error) {
       console.error('Failed to load agents:', error);
-      setAgentLoadError(true);
       toast.error('Could not load agents. Please refresh the page.');
-    } finally {
-      setAgentsLoading(false);
     }
   };
 
