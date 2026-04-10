@@ -10,7 +10,7 @@ const Sidebar = () => {
   const [userName, setUserName] = useState<string | null>(null);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    supabase.auth.getUser().then(({ data: { user } }: any) => {
       if (user) {
         setUserName(user.user_metadata?.full_name || user.email?.split('@')[0] || 'User');
       }

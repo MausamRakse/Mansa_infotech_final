@@ -5,7 +5,7 @@ import { useAgentStore } from '../store/agentStore';
 import { PhoneCall, Bot, CheckCircle2, ArrowRight, BarChart3, TrendingUp, Calendar } from 'lucide-react';
 
 const Dashboard = () => {
-  const { agents, fetchAgents } = useAgentStore();
+  const { fetchAgents } = useAgentStore();
   const [logs, setLogs] = useState<CallLog[]>([]);
   const [statsData, setStatsData] = useState({ total_calls: 0, total_completed: 0, active_agents: 0 });
   const [loading, setLoading] = useState(true);

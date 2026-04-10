@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { PhoneCall, Mail, Lock, Loader2, ArrowRight, User, Inbox, AlertCircle, RefreshCw } from 'lucide-react';
+import { PhoneCall, Mail, Lock, Loader2, ArrowRight, User, Inbox, RefreshCw } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 
@@ -66,7 +66,7 @@ const Login = () => {
     
     try {
       if (isLogin) {
-        const { error, data } = await supabase.auth.signInWithPassword({
+        const { error } = await supabase.auth.signInWithPassword({
           email,
           password
         });
