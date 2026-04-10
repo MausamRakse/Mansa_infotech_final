@@ -1,12 +1,20 @@
 import axios from "axios";
-import { supabase } from "../lib/supabase";
+import { supabase, supabaseUrl, supabaseAnonKey } from "../lib/supabase";
 
-const isProd = import.meta.env.PROD;
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.error('CRITICAL: VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY is missing in Render Environment Variables!');
+}
+
 // In production, everything shares the same origin. In dev, we use the local FastAPI server.
 const devUrl = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
 
+// Detect production environment to use relative '/api' path
+const apiOrigin = (typeof window !== 'undefined' && window.location.hostname !== 'localhost')
+  ? "/api"
+  : `${devUrl}/api`;
+
 const api = axios.create({
-  baseURL: isProd ? "/api" : `${devUrl}/api`,
+  baseURL: apiOrigin,
   headers: { "Content-Type": "application/json" },
 });
 
@@ -20,32 +28,32 @@ api.interceptors.request.use(async (config) => {
 });
 
 export const createAgent = (data: CreateAgentPayload) =>
-  api.post("/agents/create-agent", data).then(r => r.data);
+  api.post("agents/create-agent", data).then(r => r.data);
 
 export const listAgents = () =>
-  api.get("/agents/").then(r => r.data.agents);
+  api.get("agents/").then(r => r.data.agents);
 
 export const triggerCall = (data: TriggerCallPayload) =>
-  api.post("/calls/trigger-call", data).then(r => r.data);
+  api.post("calls/trigger-call", data).then(r => r.data);
 
 export const fetchCallLogs = async (limit = 50): Promise<CallLog[]> => {
-  const { data } = await api.get(`/logs/call-logs?limit=${limit}`);
+  const { data } = await api.get(`logs/call-logs?limit=${limit}`);
   return data.logs;
 };
 
 export const fetchStats = async (): Promise<{ total_calls: number; total_completed: number; active_agents: number }> => {
-  const { data } = await api.get('/logs/stats');
+  const { data } = await api.get('logs/stats');
   return data;
 };
 
 export const updateAgentApi = (data: UpdateAgentPayload) =>
-  api.post("/agents/update-agent", data).then(r => r.data);
+  api.post("agents/update-agent", data).then(r => r.data);
 
 export const deleteAgentApi = (agent_id: string) =>
-  api.post("/agents/delete-agent", { agent_id }).then(r => r.data);
+  api.post("agents/delete-agent", { agent_id }).then(r => r.data);
 
 export const createCampaign = (data: CreateCampaignPayload) =>
-  api.post("/campaigns/create", data).then(r => r.data);
+  api.post("campaigns/create", data).then(r => r.data);
 
 export interface CreateAgentPayload {
   agent_name: string;
