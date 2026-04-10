@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { PhoneCall, Mail, Lock, Loader2, ArrowRight, User, Inbox, RefreshCw } from 'lucide-react';
-import { supabase, getSupabase } from '../lib/supabase';
+import { getSupabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 
 const Login = () => {

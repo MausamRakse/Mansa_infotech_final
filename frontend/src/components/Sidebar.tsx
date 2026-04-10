@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
 import { LayoutDashboard, Bot, PhoneCall, Settings, LogOut, Hexagon, Megaphone, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { supabase, getSupabase } from '../lib/supabase';
+import { getSupabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 
 const Sidebar = () => {

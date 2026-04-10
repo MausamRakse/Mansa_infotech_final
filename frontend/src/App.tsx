@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
-import { supabase, getSupabase } from './lib/supabase';
+import { getSupabase } from './lib/supabase';
 import Sidebar from './components/Sidebar';
 import Dashboard from './pages/Dashboard';
 import Agents from './pages/Agents';

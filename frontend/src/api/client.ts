@@ -1,5 +1,5 @@
 import axios from "axios";
-import { supabase, getSupabase, supabaseUrl, supabaseAnonKey } from "../lib/supabase";
+import { getSupabase, supabaseUrl, supabaseAnonKey } from "../lib/supabase";
 
 if (!supabaseUrl || !supabaseAnonKey) {
   console.error('CRITICAL: VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY is missing in Render Environment Variables!');
