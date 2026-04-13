@@ -41,6 +41,9 @@ const Login = () => {
       const { error } = await sb.auth.resend({
         type: 'signup',
         email: email,
+        options: {
+          emailRedirectTo: window.location.origin
+        }
       });
       if (error) throw error;
       toast.success('Verification email resent!');
@@ -82,7 +85,8 @@ const Login = () => {
           options: {
             data: {
               full_name: fullName
-            }
+            },
+            emailRedirectTo: window.location.origin
           }
         });
         if (error) throw error;
