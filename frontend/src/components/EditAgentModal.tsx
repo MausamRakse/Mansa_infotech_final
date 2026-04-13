@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, Loader2 } from 'lucide-react';
+import { X, Loader2, AlertTriangle, Trash2 } from 'lucide-react';
 import { updateAgentApi, deleteAgentApi, type Agent } from '../api/client';
 import { useAgentStore } from '../store/agentStore';
 import toast from 'react-hot-toast';
@@ -12,6 +12,7 @@ interface Props {
 const EditAgentModal = ({ agent, onClose }: Props) => {
   const [loading, setLoading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const { updateAgent, deleteAgent } = useAgentStore();
 
   const [formData, setFormData] = useState({
@@ -70,7 +71,6 @@ const EditAgentModal = ({ agent, onClose }: Props) => {
   };
 
   const handleDelete = async () => {
-    if (!confirm("Are you sure you want to delete this agent? This action cannot be undone.")) return;
     setIsDeleting(true);
     try {
       if (!agent.id.startsWith("default-")) {
@@ -82,6 +82,7 @@ const EditAgentModal = ({ agent, onClose }: Props) => {
     } catch (error) {
       toast.error('Failed to delete agent');
       setIsDeleting(false);
+      setShowDeleteConfirm(false);
     }
   };
 
@@ -178,8 +179,14 @@ const EditAgentModal = ({ agent, onClose }: Props) => {
           </div>
 
           <div className="pt-2 flex items-center justify-between border-t border-border mt-4">
-            <button type="button" onClick={handleDelete} disabled={isDeleting || loading} className="text-error hover:text-red-700 transition-colors text-[14px] font-medium disabled:opacity-50">
-              {isDeleting ? 'Deleting...' : 'Delete Agent'}
+            <button 
+              type="button" 
+              onClick={() => setShowDeleteConfirm(true)} 
+              disabled={isDeleting || loading} 
+              className="text-error hover:bg-error/10 px-3 py-2 rounded-lg transition-all text-[14px] font-bold disabled:opacity-50 flex items-center gap-2"
+            >
+              <Trash2 className="w-4 h-4" />
+              Delete Agent
             </button>
             <div className="flex gap-3">
               <button type="button" onClick={onClose} disabled={isDeleting || loading} className="btn-outline">Cancel</button>
@@ -190,6 +197,40 @@ const EditAgentModal = ({ agent, onClose }: Props) => {
             </div>
           </div>
         </form>
+
+        {showDeleteConfirm && (
+          <div className="absolute inset-0 z-[60] flex items-center justify-center p-6 animate-in fade-in duration-200">
+            <div className="absolute inset-0 bg-surface/80 backdrop-blur-md rounded-[16px]" />
+            <div className="relative bg-surface border border-error/20 w-full max-w-[360px] p-8 rounded-[24px] shadow-2xl text-center animate-in zoom-in-95 duration-200">
+              <div className="w-16 h-16 bg-error/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                <AlertTriangle className="w-8 h-8 text-error" />
+              </div>
+              
+              <h3 className="text-[20px] font-bold text-surface-foreground mb-2">Delete Agent?</h3>
+              <p className="text-[14px] text-textMuted leading-relaxed mb-8">
+                Are you sure you want to delete <span className="text-surface-foreground font-bold">"{agent.name}"</span>? 
+                This action is permanent and cannot be undone.
+              </p>
+
+              <div className="flex flex-col gap-3">
+                <button 
+                  onClick={handleDelete}
+                  disabled={isDeleting}
+                  className="w-full bg-error text-white py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-red-600 transition-all shadow-lg shadow-error/20 disabled:opacity-70"
+                >
+                  {isDeleting ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Yes, Delete Agent'}
+                </button>
+                <button 
+                  onClick={() => setShowDeleteConfirm(false)}
+                  disabled={isDeleting}
+                  className="w-full py-3.5 rounded-xl font-bold text-surface-foreground hover:bg-muted transition-all"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
