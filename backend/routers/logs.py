@@ -49,10 +49,8 @@ def sync_call_data_offline(log: dict):
 def get_call_logs(background_tasks: BackgroundTasks, limit: int = Query(50, le=100), user_id: str = Depends(get_user_id)):
     """Fetches call logs from all agents and automatically saves recordings offline."""
     try:
-        # Build agent map
+        # Build agent map - Only include agents owned by the user
         agents_map = {}
-        if DEFAULT_AGENT_ID:
-            agents_map[str(DEFAULT_AGENT_ID)] = "Support Hub"
         
         try:
             raw_agents = tabbly.get_agents()

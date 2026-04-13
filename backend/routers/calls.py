@@ -21,7 +21,7 @@ def trigger_call(req: TriggerCallRequest, user_id: str = Depends(get_user_id)):
     try:
         # Verify ownership
         user_agent_ids = supabase_service.get_user_agent_ids(user_id)
-        if str(req.agent_id) not in user_agent_ids and not str(req.agent_id).startswith("default-"):
+        if str(req.agent_id) not in user_agent_ids:
             raise HTTPException(status_code=403, detail="Not authorized to use this agent")
 
         availability_instruction = cal.build_availability_instruction()

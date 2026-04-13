@@ -43,13 +43,10 @@ def trigger_call(agent_id, called_to, custom_instruction="", custom_first_line="
     and pass them as custom_instruction.
     Returns: full Tabbly response dict
     """
-    if str(agent_id).startswith("default-"):
-        parsed_agent_id = int(os.getenv("TABBLY_AGENT_ID", 1))
-    else:
-        try:
-            parsed_agent_id = int(agent_id)
-        except (ValueError, TypeError):
-            raise ValueError(f"Invalid agent_id provided: {agent_id}. Agent ID must be a numeric value associated with Tabbly.")
+    try:
+        parsed_agent_id = int(agent_id)
+    except (ValueError, TypeError):
+        raise ValueError(f"Invalid agent_id provided: {agent_id}. Agent ID must be a numeric value associated with Tabbly.")
 
     payload = {
         "organization_id": int(os.getenv("TABBLY_ORG_ID")),
