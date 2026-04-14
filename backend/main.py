@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
-from routers import agents, calls, logs, campaigns, users
+from routers import agents, calls, logs, campaigns, users, webhooks
 
 app = FastAPI(title="convexa.ai")
 
@@ -21,6 +21,7 @@ app.include_router(calls.router, prefix="/api")
 app.include_router(logs.router, prefix="/api")
 app.include_router(campaigns.router, prefix="/api")
 app.include_router(users.router, prefix="/api")
+app.include_router(webhooks.router, prefix="/api")
 
 # Serve the static React build inside the unified server
 frontend_dist = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../frontend/dist")

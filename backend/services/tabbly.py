@@ -149,3 +149,17 @@ def create_campaign(campaign_name, agent_id, start_time, end_time, time_zone, cu
         raise Exception(response.get("message", r.text) if isinstance(response, dict) else r.text)
 
     return response
+def fetch_call_logs_by_id(call_id: str):
+    """
+    Fetches call logs from Tabbly and filters for a specific call_id (participant_identity).
+    """
+    params = {
+        "api_key": TABBLY_API_KEY,
+        "organization_id": TABBLY_ORG_ID,
+        "limit": 20,
+    }
+    r = requests.get(f"{BASE}/dashboard/agents/endpoints/call-logs-v2", params=params)
+    r.raise_for_status()
+    logs = r.json().get("data", [])
+    # Filter for the specific call_id
+    return [log for log in logs if log.get("participant_identity") == call_id]
