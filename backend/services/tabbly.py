@@ -36,7 +36,7 @@ def create_agent(agent_name, custom_first_line, prompt_text,
     return r.json().get("data", {}).get("agent_id")
 
 
-def trigger_call(agent_id, called_to, custom_instruction="", custom_first_line=""):
+def trigger_call(agent_id, called_to, custom_instruction="", custom_first_line="", custom_identifiers="dashboard_trigger"):
     """
     Maps to: POST https://www.tabbly.io/dashboard/agents/endpoints/trigger-call
     Before calling this, the router should pre-fetch Cal.com slots via cal.py
@@ -57,7 +57,7 @@ def trigger_call(agent_id, called_to, custom_instruction="", custom_first_line="
         "custom_instruction": custom_instruction,
         "called_by_account": "API",
         "api_key": TABBLY_API_KEY,
-        "custom_identifiers": "dashboard_trigger",
+        "custom_identifiers": custom_identifiers,
     }
     r = requests.post(f"{BASE}/dashboard/agents/endpoints/trigger-call",
                       headers={"Content-Type": "application/json"},
@@ -156,7 +156,7 @@ def fetch_call_logs_by_id(call_id: str):
     params = {
         "api_key": TABBLY_API_KEY,
         "organization_id": TABBLY_ORG_ID,
-        "limit": 20,
+        "limit": 100,
     }
     r = requests.get(f"{BASE}/dashboard/agents/endpoints/call-logs-v2", params=params)
     r.raise_for_status()

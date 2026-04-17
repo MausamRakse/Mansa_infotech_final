@@ -30,6 +30,7 @@ const TriggerCallModal = ({ agent, onClose }: Props) => {
         agent_id: agent.id,
         phone_number: phone,
         custom_first_line: customGreeting,
+        is_booking_agent: agent.meeting_enabled,
       });
       setCallId(res.call_id);
       toast.success('Call triggered successfully!');
@@ -100,7 +101,7 @@ const TriggerCallModal = ({ agent, onClose }: Props) => {
           {step === 2 && (
             <div className="flex flex-col items-center justify-center py-8 gap-4 animate-in fade-in zoom-in-95">
               <Loader2 className="w-10 h-10 text-primary animate-spin" />
-              <p className="text-surface-foreground font-medium text-[15px]">Fetching availability & placing call...</p>
+              <p className="text-surface-foreground font-medium text-[15px]">{agent.meeting_enabled ? "Fetching availability & placing call..." : "Placing call..."}</p>
               <p className="text-[13px] text-textMuted text-center max-w-[250px]">Calling {phone}. Please wait, this may take a moment.</p>
             </div>
           )}

@@ -69,6 +69,7 @@ export interface TriggerCallPayload {
   agent_id: string;
   phone_number: string;
   custom_first_line?: string;
+  is_booking_agent?: boolean;
 }
 
 export interface CreateCampaignPayload {

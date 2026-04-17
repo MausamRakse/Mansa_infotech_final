@@ -1,7 +1,9 @@
 import os, requests
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
-load_dotenv(override=True)
+
+env_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env')
+load_dotenv(dotenv_path=env_path, override=True)
 
 CAL_API_KEY       = os.getenv("CAL_API_KEY")
 CAL_EVENT_TYPE_ID = os.getenv("CAL_EVENT_TYPE_ID", "1599599")
@@ -35,21 +37,23 @@ def build_availability_instruction():
         start = f"{day}T03:30:00.000Z"
         end   = f"{day}T12:30:00.000Z"
         try:
-            r = requests.get("https://api.cal.com/v1/slots",
+            r = requests.get("https://api.cal.com/v2/slots/available",
                              params={"eventTypeId": CAL_EVENT_TYPE_ID,
                                      "apiKey": CAL_API_KEY,
                                      "startTime": start, "endTime": end},
                              timeout=10)
             windows = {}
-            for _, slots in r.json().get("slots", {}).items():
+            data = r.json().get("data", {})
+            slots_by_date = data.get("slots", {}) if isinstance(data, dict) else {}
+            for _, slots in slots_by_date.items():
                 for s in slots:
                     disp, hour = utc_to_ist(s.get("time",""))
                     w = get_window(hour)
                     windows.setdefault(w, []).append(disp)
             if windows:
                 results[day] = windows
-        except Exception:
-            pass
+        except Exception as e:
+            print("Error fetching slots for", day, ":", e)
 
     if not results:
         return "No slots available for the next 5 days. Apologize and inform the user."

@@ -8,15 +8,20 @@ router = APIRouter(prefix="/webhooks", tags=["webhooks"])
 
 @router.post("/tabbly")
 async def tabbly_webhook(request: Request, background_tasks: BackgroundTasks):
+    print("\n" + "!"*60)
+    print("!!! 🚨 TABBLY WEBHOOK DETECTED (Signal Received) !!!")
+    print("!"*60 + "\n")
     """
     Webhook received when a Tabbly call finishes.
     """
     try:
         data = await request.json()
+        print(f"\n[WEBHOOK] Received from Tabbly: {data}")
         logger.info(f"Webhook received from Tabbly: {data}")
         
         # Tabbly webhook format might vary, but we expect participant_identity (call_id)
         call_id = data.get("participant_identity") or data.get("call_id")
+        print(f"[WEBHOOK] Identified call_id: {call_id}")
         
         if call_id:
             # Process results in the background so we can respond to the webhook immediately

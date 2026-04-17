@@ -1,6 +1,6 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
 from pydantic import BaseModel
-from services import tabbly, cal, supabase_service
+from services import tabbly, cal, supabase_service, post_call_service
 from middleware.auth import get_user_id
 import os
 
@@ -10,13 +10,15 @@ class TriggerCallRequest(BaseModel):
     agent_id: str
     phone_number: str
     custom_first_line: str = ""
+    is_booking_agent: bool = False
 
 @router.post("/trigger-call")
-def trigger_call(req: TriggerCallRequest, user_id: str = Depends(get_user_id)):
+def trigger_call(req: TriggerCallRequest, background_tasks: BackgroundTasks, user_id: str = Depends(get_user_id)):
     """
-    1. Fetches Cal.com availability for next 5 days
-    2. Builds custom_instruction string
-    3. Triggers outbound call via Tabbly
+    1. Fetches Cal.com availability 
+    2. Triggers outbound call via Tabbly
+    3. PROACTIVE: Instead of waiting for a Webhook, we schedule a 
+       check for the JSON Output results directly.
     """
     try:
         # Verify ownership
@@ -24,13 +26,26 @@ def trigger_call(req: TriggerCallRequest, user_id: str = Depends(get_user_id)):
         if str(req.agent_id) not in user_agent_ids:
             raise HTTPException(status_code=403, detail="Not authorized to use this agent")
 
-        availability_instruction = cal.build_availability_instruction()
+        availability_instruction = ""
+        if req.is_booking_agent:
+            availability_instruction = cal.build_availability_instruction()
+            
         result = tabbly.trigger_call(
             agent_id=req.agent_id,
             called_to=req.phone_number,
             custom_instruction=availability_instruction,
             custom_first_line=req.custom_first_line,
+            custom_identifiers="booking:enabled" if req.is_booking_agent else "booking:disabled"
         )
-        return {"success": True, "call_id": result.get("participant_identity"), "raw": result}
+        
+        call_id = result.get("participant_identity")
+        
+        if call_id and req.is_booking_agent:
+            # We schedule the processing proactively. No webhook needed.
+            # It will wait internally for the call to finish and JSON to generate.
+            print(f"[TRIGGER] ⚡ Scheduling proactive outcome check for {call_id}...")
+            background_tasks.add_task(post_call_service.process_call_results, call_id)
+            
+        return {"success": True, "call_id": call_id, "raw": result}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
