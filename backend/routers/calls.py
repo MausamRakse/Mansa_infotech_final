@@ -28,7 +28,16 @@ def trigger_call(req: TriggerCallRequest, background_tasks: BackgroundTasks, use
 
         availability_instruction = ""
         if req.is_booking_agent:
-            availability_instruction = cal.build_availability_instruction()
+            # Fetch agent specific credentials
+            mappings = supabase_service.get_user_agent_mappings(user_id)
+            agent_map = next((m for m in mappings if str(m['agent_id']) == str(req.agent_id)), {})
+            
+            availability_instruction = cal.build_availability_instruction(
+                api_key=agent_map.get('cal_api_key'),
+                event_type_id=agent_map.get('cal_event_type_id')
+            )
+        else:
+            availability_instruction = "IMPORTANT: The meeting booking function is currently OFF. Do NOT suggest any dates or times to the user. Inform them that booking is unavailable if they ask."
             
         result = tabbly.trigger_call(
             agent_id=req.agent_id,
@@ -44,7 +53,7 @@ def trigger_call(req: TriggerCallRequest, background_tasks: BackgroundTasks, use
             # We schedule the processing proactively. No webhook needed.
             # It will wait internally for the call to finish and JSON to generate.
             print(f"[TRIGGER] ⚡ Scheduling proactive outcome check for {call_id}...")
-            background_tasks.add_task(post_call_service.process_call_results, call_id)
+            background_tasks.add_task(post_call_service.process_call_results, call_id, agent_id=req.agent_id)
             
         return {"success": True, "call_id": call_id, "raw": result}
     except Exception as e:

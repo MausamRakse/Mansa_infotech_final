@@ -5,14 +5,63 @@ import re
 from datetime import datetime, timedelta
 import logging
 from services import tabbly, cal, supabase_service
-# Note: Since the existing project uses Supabase, we can use Supabase or MongoDB. 
-# I'll stick to the logic you provided but adapt it for the service layer.
+import google.generativeai as genai
 
 logger = logging.getLogger(__name__)
 
 CAL_API_KEY = os.getenv("CAL_API_KEY")
 CAL_EVENT_TYPE_ID = os.getenv("CAL_EVENT_TYPE_ID", "1599599")
 CAL_BOOKING_URL = "https://api.cal.com/v2/bookings"
+
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+if GEMINI_API_KEY:
+    genai.configure(api_key=GEMINI_API_KEY)
+
+def extract_details_from_transcript(transcript):
+    """
+    Uses Gemini to extract meeting details from the raw transcript.
+    Returns: dict with name, email, date, time
+    """
+    if not GEMINI_API_KEY:
+        print("[GEMINI] ⚠️ No GEMINI_API_KEY found. Skipping AI extraction.")
+        return {}
+
+    print(f"[GEMINI] 🤖 Analyzing transcript (Length: {len(transcript)} chars)...")
+    
+    prompt = f"""
+    Read the following call transcript and extract meeting booking details.
+    
+    INSTRUCTIONS:
+    1. Use the year 2026 for any dates mentioned without a year.
+    2. Extract the email address using ONLY standard English (ASCII) characters. (Example: convert 'साहिल' to 'sahil').
+    3. Fix obvious typos (e.g., 'gmal.com' to 'gmail.com').
+    4. If the user spelled out the email, join the characters correctly.
+    
+    Transcript:
+    {transcript}
+    
+    Return ONLY a JSON object with these exact keys:
+    {{
+        "full_name": "...",
+        "email": "...",
+        "scheduled_date": "YYYY-MM-DD",
+        "scheduled_time": "HH:MM AM/PM",
+        "meeting_topic": "...",
+        "interested": true/false
+    }}
+    If any field is missing, use null.
+    """
+    
+    try:
+        model = genai.GenerativeModel('gemini-flash-latest')
+        response = model.generate_content(prompt)
+        # Clean up the response to extract JSON
+        text = response.text.replace("```json", "").replace("```", "").strip()
+        print(f"[GEMINI] 📦 AI Result: {text}")
+        return json.loads(text)
+    except Exception as e:
+        print(f"[GEMINI] ❌ AI extraction failed: {e}")
+        return {}
 
 def parse_date_robust(date_str):
     if not date_str: return None
@@ -56,17 +105,33 @@ def parse_time_robust(time_str):
 
 import time
 
-def process_call_results(call_id: str, retries: int = 8, delay: int = 30):
+def process_call_results(call_id, retries=8, delay=30, agent_id=None):
     """
     Called after a call ends. Fetches results from Tabbly, 
     parses them, and books on Cal.com if interested.
     Includes retries as Tabbly takes time to generate JSON output.
     """
-    print(f"\n[POST_CALL] 🚀 Proactive processing scheduled for Call ID: {call_id}")
+    print(f"\n[POST_CALL] 🚀 Proactive processing scheduled for Call ID: {call_id} (Agent: {agent_id})")
     print(f"[POST_CALL] ⏳ Waiting 120s (2 mins) for the conversation to finish before checking results...")
     time.sleep(120) 
     
     logger.info(f"Processing post-call results for Call ID: {call_id}")
+    
+    # Pre-fetch agent specific credentials if possible
+    custom_key = CAL_API_KEY
+    custom_eid = CAL_EVENT_TYPE_ID
+    
+    if agent_id:
+        try:
+            from middleware.auth import supabase
+            resp = supabase.table('agent_mappings').select('*').eq('agent_id', str(agent_id)).execute()
+            if resp.data:
+                mapping = resp.data[0]
+                if mapping.get('cal_api_key'): custom_key = mapping['cal_api_key']
+                if mapping.get('cal_event_type_id'): custom_eid = mapping['cal_event_type_id']
+                print(f"[POST_CALL] 🔑 Using personalized Cal.com credentials for agent {agent_id}")
+        except Exception as e:
+            print(f"[POST_CALL] ⚠️ Error fetching special credentials: {e}. Using defaults.")
     
     for attempt in range(retries):
         print(f"[POST_CALL] ⏳ Attempt {attempt + 1}/{retries} - Checking Tabbly for updates...")
@@ -81,7 +146,6 @@ def process_call_results(call_id: str, retries: int = 8, delay: int = 30):
         log = call_logs[0]
         
         # --- NEW CHECK: Respect the Meeting Booking Button ---
-        # Get raw identifiers and ensure it's a string to avoid crashes
         raw_identifiers = log.get("custom_identifiers")
         identifiers = str(raw_identifiers or "").lower()
         
@@ -95,49 +159,39 @@ def process_call_results(call_id: str, retries: int = 8, delay: int = 30):
         else:
             print(f"[POST_CALL] ℹ️ No specific booking identifier found. Proceeding as safety fallback.")
 
-        json_output_str = log.get("call_json_output")
-        
-        if not json_output_str:
-            print(f"[POST_CALL] ⏳ Call summary/JSON is NOT ready yet for {call_id}. Retrying in {delay}s...")
+        # --- TRANSCRIPT & AI EXTRACTION ---
+        transcript = log.get("call_transcript")
+        # Proceed only if transcript exists or it's the last attempt
+        if not transcript and attempt < retries - 1:
+            print(f"[POST_CALL] ⏳ Transcript not yet available for {call_id}. Retrying...")
             time.sleep(delay)
             continue
 
-        print(f"[POST_CALL] ✅ JSON data located for {call_id}!")
+        print(f"[POST_CALL] ✅ Data located for {call_id}!")
         
-        # 2. Extract Details
         try:
-            # Handle potential markdown wrappers in JSON
-            json_output_clean = json_output_str.replace("```json", "").replace("```", "").strip()
-            print(f"[POST_CALL] 📦 Raw JSON received: {json_output_clean}")
-            data = json.loads(json_output_clean)
+            # Extract Details (STRICTLY using AI from Transcript)
+            ai_data = extract_details_from_transcript(transcript) if transcript else {}
             
-            # Check for interested status (optional in some schemas)
-            interested = data.get("interested", True)
-            if str(interested).lower() == "false":
-                print(f"[POST_CALL] ⏭️ User marked as NOT interested. Skipping booking.")
+            name = ai_data.get("full_name") or "Unknown"
+            email_raw = ai_data.get("email")
+            date_raw = ai_data.get("scheduled_date")
+            time_raw = ai_data.get("scheduled_time")
+            topic = ai_data.get("meeting_topic") or "General Consultation"
+            
+            print(f"[POST_CALL] 🔍 MERGED DATA: Name='{name}', Email='{email_raw}', Date='{date_raw}', Time='{time_raw}', Topic='{topic}'")
+
+            if not email_raw:
+                print(f"[POST_CALL] ❌ Skip: No email found in transcript. Cannot book.")
                 return
-
-            # Robust field extraction (supports various schemas)
-            details = data.get("meeting_details") or {}
-            
-            # Default fallbacks if AI extraction fails
-            name = details.get("full_name") or data.get("user_name") or data.get("name") or "Mousam Rakse"
-            email_raw = details.get("email") or data.get("user_email") or data.get("email_id") or "mousamrakse@gmail.com"
-            date_raw = details.get("scheduled_date") or data.get("meeting_date")
-            time_raw = details.get("scheduled_time") or data.get("meeting_time")
-            
-            print(f"[POST_CALL] 🔍 Parsed Data: Name='{name}', Email='{email_raw}', Date='{date_raw}', Time='{time_raw}'")
-
-            if not email_raw or email_raw.lower() == "unknown@example.com":
-                email_raw = "mousamrakse@gmail.com"
-                print(f"[POST_CALL] ℹ️ Using default email: {email_raw}")
 
             email_clean = email_raw.replace("-", "").replace(" ", "").lower()
             parsed_date = parse_date_robust(date_raw)
             parsed_time = parse_time_robust(time_raw)
 
+            # NO FALLBACKS: If date or time is missing, we stop.
             if not parsed_date or not parsed_time:
-                print(f"[POST_CALL] ❌ Failed to parse Date ({date_raw}) or Time ({time_raw}).")
+                print(f"[POST_CALL] ❌ Skip: Missing or invalid Date ({date_raw}) or Time ({time_raw}).")
                 return
 
             # Convert IST to UTC
@@ -150,18 +204,21 @@ def process_call_results(call_id: str, retries: int = 8, delay: int = 30):
             print(f"[POST_CALL] 📅 Sending booking request to Cal.com for {email_clean}...")
             headers = {
                 "cal-api-version": "2024-08-13",
-                "Authorization": f"Bearer {CAL_API_KEY}",
+                "Authorization": f"Bearer {custom_key}",
                 "Content-Type": "application/json"
             }
             
             payload = {
                 "start": start_time_iso,
-                "eventTypeId": int(CAL_EVENT_TYPE_ID),
+                "eventTypeId": int(custom_eid),
                 "attendee": {
                     "name": name,
                     "email": email_clean,
                     "timeZone": "Asia/Kolkata",
                     "language": "en"
+                },
+                "metadata": {
+                    "topic": topic
                 }
             }
             
@@ -174,9 +231,7 @@ def process_call_results(call_id: str, retries: int = 8, delay: int = 30):
                 return
 
         except Exception as e:
-            print(f"[POST_CALL] 💥 Critical error during parsing: {e}")
+            print(f"[POST_CALL] 💥 Critical error during processing: {e}")
             return
             
     print(f"[POST_CALL] 🛑 Max retries reached for {call_id}. Tabbly did not provide JSON data in time.")
-
-

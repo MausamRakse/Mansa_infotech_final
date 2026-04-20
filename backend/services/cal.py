@@ -26,11 +26,14 @@ def get_window(hour):
             return label
     return "Other"
 
-def build_availability_instruction():
+def build_availability_instruction(api_key=None, event_type_id=None):
     """
     Fetches next 5 days of Cal.com availability (9AM-6PM IST).
     Returns a formatted string to inject into the agent's custom_instruction.
     """
+    key = api_key or CAL_API_KEY
+    eid = event_type_id or CAL_EVENT_TYPE_ID
+
     results = {}
     for offset in range(6):
         day = (datetime.utcnow() + timedelta(days=offset)).strftime("%Y-%m-%d")
@@ -38,8 +41,8 @@ def build_availability_instruction():
         end   = f"{day}T12:30:00.000Z"
         try:
             r = requests.get("https://api.cal.com/v2/slots/available",
-                             params={"eventTypeId": CAL_EVENT_TYPE_ID,
-                                     "apiKey": CAL_API_KEY,
+                             params={"eventTypeId": eid,
+                                     "apiKey": key,
                                      "startTime": start, "endTime": end},
                              timeout=10)
             windows = {}

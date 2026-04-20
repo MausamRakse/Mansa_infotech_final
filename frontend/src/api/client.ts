@@ -59,6 +59,8 @@ export interface CreateAgentPayload {
   stt_language: string;
   voice_id: number;
   enable_calendar_booking: boolean;
+  cal_api_key?: string;
+  cal_event_type_id?: string;
 }
 
 export interface UpdateAgentPayload extends CreateAgentPayload {
@@ -90,6 +92,8 @@ export interface Agent {
   language: string;
   voice_id: number;
   meeting_enabled: boolean;
+  cal_api_key?: string;
+  cal_event_type_id?: string;
   category?: "customer_care" | "growth" | "custom";
 }
 

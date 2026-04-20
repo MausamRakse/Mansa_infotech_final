@@ -18,6 +18,8 @@ const CreateAgentModal = ({ onClose }: Props) => {
     stt_language: 'en',
     voice_id: 1,
     enable_calendar_booking: false,
+    cal_api_key: 'cal_live_69db2c652382b5e55d48ce9aa16c7a4c',
+    cal_event_type_id: '4877569',
   });
   const [errors, setErrors] = useState<Record<string, boolean>>({});
 
@@ -27,6 +29,11 @@ const CreateAgentModal = ({ onClose }: Props) => {
     if (!formData.agent_name.trim()) newErrors.agent_name = true;
     if (!formData.custom_first_line.trim()) newErrors.custom_first_line = true;
     if (!formData.prompt_text.trim()) newErrors.prompt_text = true;
+
+    if (formData.enable_calendar_booking) {
+      if (!formData.cal_api_key.trim()) newErrors.cal_api_key = true;
+      if (!formData.cal_event_type_id.trim()) newErrors.cal_event_type_id = true;
+    }
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -125,19 +132,48 @@ const CreateAgentModal = ({ onClose }: Props) => {
             </div>
           </div>
 
-          <div className="flex items-center justify-between mt-2 py-3 border-t border-border text-[14px]">
-            <div className="flex flex-col">
-              <span className="font-semibold text-surface-foreground">Meeting Booking</span>
-              <span className="text-[12px] text-textMuted">Allow agent to access Cal.com slots</span>
+          <div className="flex flex-col gap-4 py-3 border-t border-border mt-2">
+            <div className="flex items-center justify-between text-[14px]">
+              <div className="flex flex-col">
+                <span className="font-semibold text-surface-foreground">Meeting Booking</span>
+                <span className="text-[12px] text-textMuted">Allow agent to access Cal.com slots</span>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                onClick={() => setFormData({ ...formData, enable_calendar_booking: !formData.enable_calendar_booking })}
+                className={`relative inline-flex h-[24px] w-[44px] shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${formData.enable_calendar_booking ? 'bg-primary' : 'bg-border'}`}
+              >
+                <span className={`pointer-events-none inline-block h-[20px] w-[20px] transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${formData.enable_calendar_booking ? 'translate-x-[20px]' : 'translate-x-0'}`} />
+              </button>
             </div>
-            <button
-              type="button"
-              role="switch"
-              onClick={() => setFormData({ ...formData, enable_calendar_booking: !formData.enable_calendar_booking })}
-              className={`relative inline-flex h-[24px] w-[44px] shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${formData.enable_calendar_booking ? 'bg-primary' : 'bg-border'}`}
-            >
-              <span className={`pointer-events-none inline-block h-[20px] w-[20px] transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${formData.enable_calendar_booking ? 'translate-x-[20px]' : 'translate-x-0'}`} />
-            </button>
+
+            {formData.enable_calendar_booking && (
+              <div className="grid grid-cols-2 gap-4 animate-in slide-in-from-top-2 duration-200">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[12px] font-bold text-surface-foreground uppercase tracking-tight">Cal.com API Key</label>
+                  <input
+                    type="password"
+                    value={formData.cal_api_key}
+                    onChange={e => setFormData({ ...formData, cal_api_key: e.target.value })}
+                    className={`border rounded-[8px] px-3 py-2 text-[13px] bg-muted/20 text-surface-foreground outline-none focus:border-primary transition-all ${errors.cal_api_key ? 'border-error' : 'border-border'}`}
+                    placeholder="cal_live_..."
+                  />
+                  {errors.cal_api_key && <span className="text-[11px] text-error">Required</span>}
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[12px] font-bold text-surface-foreground uppercase tracking-tight">Event Type ID</label>
+                  <input
+                    type="text"
+                    value={formData.cal_event_type_id}
+                    onChange={e => setFormData({ ...formData, cal_event_type_id: e.target.value })}
+                    className={`border rounded-[8px] px-3 py-2 text-[13px] bg-muted/20 text-surface-foreground outline-none focus:border-primary transition-all ${errors.cal_event_type_id ? 'border-error' : 'border-border'}`}
+                    placeholder="e.g. 1599599"
+                  />
+                  {errors.cal_event_type_id && <span className="text-[11px] text-error">Required</span>}
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="pt-2 flex justify-end gap-3 border-t border-border mt-4">

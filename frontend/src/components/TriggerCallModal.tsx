@@ -10,7 +10,7 @@ interface Props {
 
 const TriggerCallModal = ({ agent, onClose }: Props) => {
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
-  const [phone, setPhone] = useState('');
+  const [phone, setPhone] = useState('+919770774461');
   const [customGreeting, setCustomGreeting] = useState('');
   const [callId, setCallId] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
