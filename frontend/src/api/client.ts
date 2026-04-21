@@ -52,6 +52,9 @@ export const deleteAgentApi = (agent_id: string) =>
 export const createCampaign = (data: CreateCampaignPayload) =>
   api.post("campaigns/create", data).then(r => r.data);
 
+export const updateCampaignApi = (campaign_id: number, current_status: string) =>
+  api.post("campaigns/update", { campaign_id, current_status }).then(r => r.data);
+
 export interface CreateAgentPayload {
   agent_name: string;
   custom_first_line: string;

@@ -3,6 +3,7 @@ from services import tabbly, supabase_service
 from middleware.auth import get_user_id
 import os
 import requests
+from datetime import datetime
 
 router = APIRouter(prefix="/logs", tags=["logs"])
 
@@ -76,22 +77,26 @@ def get_call_logs(background_tasks: BackgroundTasks, limit: int = Query(50, le=1
                     transcript = str(log.get("call_transcript") or "").strip()
                     duration = int(log.get("call_duration") or 0)
                     
-                    # Strict validation for "Completed"
-                    # 1. Must be explicitly answered by Tabbly
-                    # 2. Must have a real duration (> 0)
-                    # 3. Must have a meaningful transcript (> 20 chars)
-                    is_real_call = "answered" in raw_status and duration > 0 and len(transcript) > 20
+                    # Calculate how long ago the call was made
+                    try:
+                        called_at = datetime.strptime(log.get("called_time", ""), "%Y-%m-%d %H:%M:%S")
+                        minutes_ago = (datetime.utcnow() - called_at).total_seconds() / 60
+                    except:
+                        minutes_ago = 0
 
-                    if is_real_call:
+                    is_answered = "answered" in raw_status
+                    has_content = len(transcript) > 20 and duration > 0
+
+                    if is_answered and has_content:
                         display_status = "Completed"
-                    elif "answered" not in raw_status and raw_status != "":
-                        # Tabbly specifically said it's a failure
-                        display_status = "Not Answered"
-                    elif transcript == "" and duration == 0:
-                        # No data yet or failed connection
+                    elif is_answered and not has_content and minutes_ago < 3:
+                        # Recently answered but still waiting for transcript
+                        display_status = "Processing"
+                    elif minutes_ago > 3:
+                        # Old call with no success criteria met
                         display_status = "Not Answered"
                     else:
-                        # Might still be processing
+                        # Brand new call
                         display_status = "Processing"
 
                     all_logs.append({

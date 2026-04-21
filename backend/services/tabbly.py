@@ -163,3 +163,24 @@ def fetch_call_logs_by_id(call_id: str):
     logs = r.json().get("data", [])
     # Filter for the specific call_id
     return [log for log in logs if log.get("participant_identity") == call_id]
+
+def update_campaign(campaign_id, current_status=None, start_time=None, end_time=None):
+    """
+    Maps to: POST https://www.tabbly.io/dashboard/agents/endpoints/update-campaign
+    """
+    payload = {
+        "api_key": TABBLY_API_KEY,
+        "organization_id": int(TABBLY_ORG_ID),
+        "id": int(campaign_id)
+    }
+    if current_status: payload["current_status"] = current_status
+    if start_time: payload["start_time"] = start_time
+    if end_time: payload["end_time"] = end_time
+
+    r = requests.post(
+        f"{BASE}/dashboard/agents/endpoints/update-campaign",
+        headers={"Content-Type": "application/json"},
+        json=payload
+    )
+    r.raise_for_status()
+    return r.json()
