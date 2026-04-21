@@ -101,7 +101,7 @@ export interface CallLog {
   call_id: string;
   phone_number: string;
   date: string;
-  status: "Completed" | "Processing";
+  status: "Completed" | "Processing" | "Not Answered";
   recording_url: string | null;
   transcript: string | null;
   json_output: string | null;

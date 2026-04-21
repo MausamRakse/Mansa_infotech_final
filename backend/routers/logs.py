@@ -71,11 +71,23 @@ def get_call_logs(background_tasks: BackgroundTasks, limit: int = Query(50, le=1
                     # Sync files to disk locally via background task so we don't slow down response
                     background_tasks.add_task(sync_call_data_offline, log)
                     
+                    # Robust Status Mapping
+                    raw_status = str(log.get("call_status") or "").lower()
+                    transcript = log.get("call_transcript")
+                    
+                    # If Tabbly doesn't explicitly say Answered, it's a failure
+                    if "answered" not in raw_status:
+                        display_status = "Not Answered"
+                    elif transcript:
+                        display_status = "Completed"
+                    else:
+                        display_status = "Processing"
+
                     all_logs.append({
                         "call_id":       log.get("participant_identity", ""),
                         "phone_number":  log.get("called_to", ""),
                         "date":          log.get("called_time", ""),
-                        "status":        "Completed" if log.get("call_transcript") else "Processing",
+                        "status":        display_status,
                         "recording_url": log.get("call_recording_url"),
                         "transcript":    log.get("call_transcript"),
                         "json_output":   log.get("call_json_output"),
