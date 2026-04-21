@@ -29,28 +29,101 @@ def extract_details_from_transcript(transcript):
     print(f"[GEMINI] 🤖 Analyzing transcript (Length: {len(transcript)} chars)...")
     
     prompt = f"""
-    Read the following call transcript and extract meeting booking details.
-    
-    INSTRUCTIONS:
-    1. Use the year 2026 for any dates mentioned without a year.
-    2. Extract the email address using ONLY standard English (ASCII) characters. (Example: convert 'साहिल' to 'sahil').
-    3. Fix obvious typos (e.g., 'gmal.com' to 'gmail.com').
-    4. If the user spelled out the email, join the characters correctly.
-    
-    Transcript:
-    {transcript}
-    
-    Return ONLY a JSON object with these exact keys:
-    {{
-        "full_name": "...",
-        "email": "...",
-        "scheduled_date": "YYYY-MM-DD",
-        "scheduled_time": "HH:MM AM/PM",
-        "meeting_topic": "...",
-        "interested": true/false
-    }}
-    If any field is missing, use null.
-    """
+You are an expert AI system for extracting and CORRECTING meeting details from noisy, multi-language call transcripts.
+
+The transcript may include:
+- Speech recognition errors
+- Hindi + English mixing
+- Multiple corrections by the user
+- Spelled-out email characters
+- Repeated wrong attempts
+
+------------------------
+CRITICAL RULES:
+------------------------
+
+1. EMAIL RECONSTRUCTION (VERY IMPORTANT):
+- The user may provide the email multiple times with mistakes.
+- DO NOT rely only on the last attempt.
+- Collect ALL email attempts from the transcript.
+- Combine and analyze all attempts to reconstruct the MOST LIKELY correct email.
+
+Use:
+- Frequency (what appears most)
+- Similarity (closest matching words)
+- Context (common names/domains)
+
+Example:
+"bimel", "vimel", "vimal" → "vimal"  
+"manhinfteeh", "manta infotech", "mansainfotech" → "mansainfotech"
+
+FINAL EMAIL = best username + best domain
+
+------------------------
+
+2. EMAIL NORMALIZATION:
+Convert:
+- "at", "at the rate" → "@"
+- "dot" → "."
+- "underscore" → "_"
+- "dash" → "-"
+- remove spaces
+
+------------------------
+
+3. SPELLING HANDLING:
+Join sequences like:
+"v i m a l" → "vimal"
+
+------------------------
+
+4. LANGUAGE NORMALIZATION:
+Convert Hindi words to English phonetics:
+- "विमल" → "vimal"
+- "मंसा infotech" → "mansainfotech"
+
+------------------------
+
+5. ERROR CORRECTION:
+Fix ASR mistakes intelligently using ALL attempts:
+- manhinfteeh → mansions infotech
+- manta infotech → mansainfotech
+
+------------------------
+
+6. VALIDATION:
+Final email MUST:
+- follow format: name@domain.com
+- contain no spaces
+- be logically consistent
+
+If multiple possibilities exist, choose the MOST PROBABLE one.
+
+If still ambiguous, return null.
+
+------------------------
+
+7. DATE & TIME:
+- "tomorrow" → 2026-04-22
+- Convert time to: HH:MM AM/PM
+
+------------------------
+
+TRANSCRIPT:
+{transcript}
+
+------------------------
+
+OUTPUT (STRICT JSON):
+{{
+    "full_name": "...",
+    "email": "...",
+    "scheduled_date": "YYYY-MM-DD",
+    "scheduled_time": "HH:MM AM/PM",
+    "meeting_topic": "...",
+    "interested": true/false
+}}
+"""
     
     try:
         model = genai.GenerativeModel('gemini-flash-latest')
