@@ -29,42 +29,71 @@ def get_window(hour):
 def build_availability_instruction(api_key=None, event_type_id=None):
     """
     Fetches next 5 days of Cal.com availability (9AM-6PM IST).
+    Filters out slots that have already passed for today.
     Returns a formatted string to inject into the agent's custom_instruction.
     """
     key = api_key or CAL_API_KEY
     eid = event_type_id or CAL_EVENT_TYPE_ID
 
+    now_utc = datetime.utcnow()
+    # Approximate IST from UTC for filtering
+    now_ist_hour = (now_utc.hour + 5) + (1 if now_utc.minute + 30 >= 60 else 0)
+    if now_ist_hour >= 24: now_ist_hour -= 24
+    now_ist_minute = (now_utc.minute + 30) % 60
+
     results = {}
     for offset in range(6):
-        day = (datetime.utcnow() + timedelta(days=offset)).strftime("%Y-%m-%d")
-        start = f"{day}T03:30:00.000Z"
-        end   = f"{day}T12:30:00.000Z"
+        date_obj = (now_utc + timedelta(days=offset))
+        day = date_obj.strftime("%Y-%m-%d")
+        
+        # 9 AM to 6 PM IST is approx 03:30 to 12:30 UTC
+        start_ts = f"{day}T03:30:00.000Z"
+        end_ts   = f"{day}T12:30:00.000Z"
+        
         try:
             r = requests.get("https://api.cal.com/v2/slots/available",
                              params={"eventTypeId": eid,
                                      "apiKey": key,
-                                     "startTime": start, "endTime": end},
+                                     "startTime": start_ts, "endTime": end_ts},
                              timeout=10)
             windows = {}
             data = r.json().get("data", {})
             slots_by_date = data.get("slots", {}) if isinstance(data, dict) else {}
+            
             for _, slots in slots_by_date.items():
                 for s in slots:
-                    disp, hour = utc_to_ist(s.get("time",""))
+                    time_str = s.get("time", "") # format: 2026-04-21T04:00:00Z
+                    disp, hour = utc_to_ist(time_str)
+                    
+                    # EXTRACT MINUTE FOR FILTERING
+                    slot_minute = int(time_str[14:16])
+                    
+                    # FILTER OUT PAST SLOTS FOR TODAY
+                    if offset == 0:
+                        if hour < now_ist_hour or (hour == now_ist_hour and slot_minute <= now_ist_minute):
+                            continue
+                    
                     w = get_window(hour)
                     windows.setdefault(w, []).append(disp)
+            
             if windows:
                 results[day] = windows
         except Exception as e:
             print("Error fetching slots for", day, ":", e)
 
     if not results:
-        return "No slots available for the next 5 days. Apologize and inform the user."
+        return "CRITICAL: No slots available for the next 5 days. Inform the user that the calendar is fully booked and suggest calling back later."
 
-    lines = ["AVAILABLE CONSULTATION SLOTS (IST, grouped by 2-hour windows):"]
+    lines = [
+        "STRICT INSTRUCTION: Suggest ONLY the following available slots.",
+        "DO NOT suggest any time that is not explicitly mentioned below.",
+        "The following slots are GUARANTEED to be free right now.",
+        "\nAVAILABLE CONSULTATION SLOTS (IST, grouped by 2-hour windows):"
+    ]
     for day, windows in results.items():
         lines.append(f"\nDate: {day}")
         for w, slots in windows.items():
             lines.append(f"  - Window [{w}]: {', '.join(slots)}")
-    lines.append("\nOffer windows one at a time. Only reveal specific slots after user agrees to a window.")
+            
+    lines.append("\nOffer windows one at a time. Do NOT suggest already passed or booked times.")
     return "\n".join(lines)
