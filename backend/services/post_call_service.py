@@ -105,7 +105,7 @@ def parse_time_robust(time_str):
 
 import time
 
-def process_call_results(call_id, retries=8, delay=30, agent_id=None, user_id=None):
+def process_call_results(call_id, retries=15, delay=30, agent_id=None, user_id=None):
     """
     Called after a call ends. Fetches results from Tabbly, 
     parses them, and books on Cal.com if interested.
