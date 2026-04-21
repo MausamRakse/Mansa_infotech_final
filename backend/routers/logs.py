@@ -73,14 +73,25 @@ def get_call_logs(background_tasks: BackgroundTasks, limit: int = Query(50, le=1
                     
                     # Robust Status Mapping
                     raw_status = str(log.get("call_status") or "").lower()
-                    transcript = log.get("call_transcript")
+                    transcript = str(log.get("call_transcript") or "").strip()
+                    duration = int(log.get("call_duration") or 0)
                     
-                    # If Tabbly doesn't explicitly say Answered, it's a failure
-                    if "answered" not in raw_status:
-                        display_status = "Not Answered"
-                    elif transcript:
+                    # Strict validation for "Completed"
+                    # 1. Must be explicitly answered by Tabbly
+                    # 2. Must have a real duration (> 0)
+                    # 3. Must have a meaningful transcript (> 20 chars)
+                    is_real_call = "answered" in raw_status and duration > 0 and len(transcript) > 20
+
+                    if is_real_call:
                         display_status = "Completed"
+                    elif "answered" not in raw_status and raw_status != "":
+                        # Tabbly specifically said it's a failure
+                        display_status = "Not Answered"
+                    elif transcript == "" and duration == 0:
+                        # No data yet or failed connection
+                        display_status = "Not Answered"
                     else:
+                        # Might still be processing
                         display_status = "Processing"
 
                     all_logs.append({
