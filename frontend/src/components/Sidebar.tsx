@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Bot, PhoneCall, Settings, LogOut, Hexagon, Megaphone, User } from 'lucide-react';
+import { LayoutDashboard, Bot, PhoneCall, Settings, LogOut, Hexagon, Megaphone, User, CalendarCheck } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { getSupabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
@@ -37,6 +37,7 @@ const Sidebar = () => {
     { name: 'Agents', path: '/agents', icon: Bot },
     { name: 'Campaigns', path: '/campaigns', icon: Megaphone },
     { name: 'Call Logs', path: '/logs', icon: PhoneCall },
+    { name: 'Meeting Logs', path: '/meetings', icon: CalendarCheck },
     { name: 'Settings', path: '/settings', icon: Settings },
   ];
 

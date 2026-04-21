@@ -6,6 +6,7 @@ import Sidebar from './components/Sidebar';
 import Dashboard from './pages/Dashboard';
 import Agents from './pages/Agents';
 import CallLogs from './pages/CallLogs';
+import MeetingLogs from './pages/MeetingLogs';
 import Settings from './pages/Settings';
 import Campaigns from './pages/Campaigns';
 import Landing from './pages/Landing';
@@ -81,6 +82,7 @@ function App() {
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/agents" element={<ProtectedRoute><Agents /></ProtectedRoute>} />
           <Route path="/logs" element={<ProtectedRoute><CallLogs /></ProtectedRoute>} />
+          <Route path="/meetings" element={<ProtectedRoute><MeetingLogs /></ProtectedRoute>} />
           <Route path="/campaigns" element={<ProtectedRoute><Campaigns /></ProtectedRoute>} />
           <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
           <Route path="*" element={<Navigate to="/" replace />} />
