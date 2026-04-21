@@ -86,7 +86,7 @@ Convert Hindi words to English phonetics:
 
 5. ERROR CORRECTION:
 Fix ASR mistakes intelligently using ALL attempts:
-- manhinfteeh → mansions infotech
+- manhinfteeh → mansainfotech
 - manta infotech → mansainfotech
 
 ------------------------
