@@ -107,3 +107,22 @@ export interface CallLog {
   json_output: string | null;
   agent_name: string;
 }
+
+export interface MeetingLog {
+  id: string;
+  user_id: string;
+  agent_id: string;
+  agent_name?: string;
+  call_id: string;
+  status: "booked" | "failed" | "skipped";
+  extracted_email?: string;
+  meeting_topic?: string;
+  is_interested?: boolean;
+  error_reason?: string;
+  created_at: string;
+}
+
+export const getMeetingLogs = async (): Promise<MeetingLog[]> => {
+  const { data } = await api.get('/calls/meeting-logs');
+  return data.logs;
+};

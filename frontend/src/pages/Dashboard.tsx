@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
-import { fetchCallLogs, fetchStats, type CallLog } from '../api/client';
+import { fetchCallLogs, fetchStats, getMeetingLogs, type CallLog, type MeetingLog } from '../api/client';
 import { useAgentStore } from '../store/agentStore';
-import { PhoneCall, Bot, CheckCircle2, ArrowRight, BarChart3, TrendingUp, Calendar } from 'lucide-react';
+import { PhoneCall, Bot, CheckCircle2, ArrowRight, BarChart3, TrendingUp, Calendar, CalendarCheck } from 'lucide-react';
 
 const Dashboard = () => {
   const { fetchAgents } = useAgentStore();
   const [logs, setLogs] = useState<CallLog[]>([]);
+  const [meetingLogs, setMeetingLogs] = useState<MeetingLog[]>([]);
   const [statsData, setStatsData] = useState({ total_calls: 0, total_completed: 0, active_agents: 0 });
   const [loading, setLoading] = useState(true);
 
@@ -17,8 +18,10 @@ const Dashboard = () => {
         await fetchAgents();
         const logsData = await fetchCallLogs(5);
         const aggregatedStats = await fetchStats();
+        const mLogs = await getMeetingLogs();
         setLogs(logsData);
         setStatsData(aggregatedStats);
+        setMeetingLogs(mLogs);
       } catch (err) {
         console.error(err);
       } finally {
@@ -200,6 +203,86 @@ const Dashboard = () => {
           >
             Deploy More Agents <Plus className="w-4 h-4" />
           </NavLink>
+        </div>
+      </div>
+
+      {/* Meeting Logs Analytics Section */}
+      <div className="flex flex-col gap-6 mt-4 pb-8">
+        <div className="flex items-center justify-between">
+          <h2 className="text-[22px] font-black text-surface-foreground flex items-center gap-2">
+            <CalendarCheck className="w-6 h-6 text-primary" />
+            Meeting Analytics & Logs
+          </h2>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-2">
+          <div className="bg-surface border border-border/60 rounded-2xl p-6 shadow-sm">
+            <h3 className="text-sm font-bold text-textMuted uppercase tracking-wider mb-2">Total Booked</h3>
+            <p className="text-3xl font-black text-success">{meetingLogs.filter(m => m.status === 'booked').length}</p>
+          </div>
+          <div className="bg-surface border border-border/60 rounded-2xl p-6 shadow-sm">
+            <h3 className="text-sm font-bold text-textMuted uppercase tracking-wider mb-2">Failed/Skipped</h3>
+            <p className="text-3xl font-black text-error">{meetingLogs.filter(m => m.status === 'failed' || m.status === 'skipped').length}</p>
+          </div>
+        </div>
+
+        <div className="bg-surface border border-border/60 rounded-2xl overflow-hidden shadow-xl shadow-black/5">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-[14px]">
+              <thead className="bg-muted/5 text-textMuted border-b border-border/40">
+                <tr>
+                  <th className="px-6 py-4 font-bold text-[11px] uppercase tracking-widest">Agent</th>
+                  <th className="px-6 py-4 font-bold text-[11px] uppercase tracking-widest">Email</th>
+                  <th className="px-6 py-4 font-bold text-[11px] uppercase tracking-widest">Topic</th>
+                  <th className="px-6 py-4 font-bold text-[11px] uppercase tracking-widest">Interest</th>
+                  <th className="px-6 py-4 font-bold text-[11px] uppercase tracking-widest">Status</th>
+                  <th className="px-6 py-4 font-bold text-[11px] uppercase tracking-widest">Reason / Details</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/30">
+                {meetingLogs.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="px-6 py-8 text-center text-textMuted text-[13px]">
+                      No meeting data recorded yet. Ensure an agent has "Meeting Booking" enabled.
+                    </td>
+                  </tr>
+                ) : (
+                  meetingLogs.map((mlog, i) => (
+                    <tr key={mlog.id || i} className="hover:bg-primary/5 transition-colors">
+                      <td className="px-6 py-4 font-semibold text-surface-foreground whitespace-nowrap">
+                        {mlog.agent_name || 'Unknown'}
+                      </td>
+                      <td className="px-6 py-4 font-mono text-[12px] text-textMuted">
+                        {mlog.extracted_email || '—'}
+                      </td>
+                      <td className="px-6 py-4 text-[13px] text-surface-foreground max-w-[200px] truncate">
+                        {mlog.meeting_topic || '—'}
+                      </td>
+                      <td className="px-6 py-4">
+                        {mlog.is_interested ? (
+                          <span className="inline-flex px-2 py-0.5 rounded-md text-[10px] font-black bg-success/10 text-success">YES</span>
+                        ) : (
+                          <span className="inline-flex px-2 py-0.5 rounded-md text-[10px] font-black bg-error/10 text-error">NO</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`inline-flex px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                          mlog.status === 'booked' ? 'bg-success/10 text-success' : 
+                          mlog.status === 'failed' ? 'bg-error/10 text-error' : 
+                          'bg-warning/10 text-warning'
+                        }`}>
+                          {mlog.status === 'booked' ? 'Booked ✅' : mlog.status === 'failed' ? 'Failed ❌' : 'Skipped ⏭️'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-[12px] text-textMuted max-w-[250px] truncate" title={mlog.error_reason || 'Success'}>
+                        {mlog.error_reason || 'Successfully processed'}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>

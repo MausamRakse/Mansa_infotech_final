@@ -105,7 +105,7 @@ def parse_time_robust(time_str):
 
 import time
 
-def process_call_results(call_id, retries=8, delay=30, agent_id=None):
+def process_call_results(call_id, retries=8, delay=30, agent_id=None, user_id=None):
     """
     Called after a call ends. Fetches results from Tabbly, 
     parses them, and books on Cal.com if interested.
@@ -153,6 +153,8 @@ def process_call_results(call_id, retries=8, delay=30, agent_id=None):
         
         if "booking:disabled" in identifiers:
             print(f"[POST_CALL] ⏹️ Booking is DISABLED for this call. Ending process.")
+            if user_id:
+                supabase_service.log_meeting(user_id, agent_id, call_id, status="skipped", error_reason="Booking disabled for this agent")
             return
         elif "booking:enabled" in identifiers:
             print(f"[POST_CALL] 🏷️ Booking is ENABLED for this call. Proceeding...")
@@ -183,6 +185,8 @@ def process_call_results(call_id, retries=8, delay=30, agent_id=None):
 
             if not email_raw:
                 print(f"[POST_CALL] ❌ Skip: No email found in transcript. Cannot book.")
+                if user_id:
+                    supabase_service.log_meeting(user_id, agent_id, call_id, status="failed", error_reason="AI could not extract an email address", meeting_topic=topic, is_interested=ai_data.get("interested", False))
                 return
 
             email_clean = email_raw.replace("-", "").replace(" ", "").lower()
@@ -192,6 +196,8 @@ def process_call_results(call_id, retries=8, delay=30, agent_id=None):
             # NO FALLBACKS: If date or time is missing, we stop.
             if not parsed_date or not parsed_time:
                 print(f"[POST_CALL] ❌ Skip: Missing or invalid Date ({date_raw}) or Time ({time_raw}).")
+                if user_id:
+                    supabase_service.log_meeting(user_id, agent_id, call_id, status="failed", error_reason=f"Missing Date or Time (Date: {date_raw}, Time: {time_raw})", extracted_email=email_raw, meeting_topic=topic, is_interested=ai_data.get("interested", False))
                 return
 
             # Convert IST to UTC
@@ -225,13 +231,24 @@ def process_call_results(call_id, retries=8, delay=30, agent_id=None):
             resp = requests.post(CAL_BOOKING_URL, headers=headers, json=payload)
             if resp.status_code in [200, 201]:
                 print(f"[POST_CALL] ✅ SUCCESS! Booking confirmed for {email_clean}. Meeting URL: {resp.json().get('data', {}).get('meetingUrl')}")
+                if user_id:
+                    supabase_service.log_meeting(user_id, agent_id, call_id, status="booked", extracted_email=email_clean, meeting_topic=topic, is_interested=ai_data.get("interested", False))
                 return
             else:
-                print(f"[POST_CALL] ❌ Cal.com API Error ({resp.status_code}): {resp.text}")
+                error_msg = resp.text
+                try:
+                    js = resp.json()
+                    error_msg = js.get("message") or js.get("error", {}).get("message") or resp.text
+                except: pass
+                print(f"[POST_CALL] ❌ Cal.com API Error ({resp.status_code}): {error_msg}")
+                if user_id:
+                    supabase_service.log_meeting(user_id, agent_id, call_id, status="failed", error_reason=f"Cal.com API Error: {error_msg}", extracted_email=email_clean, meeting_topic=topic, is_interested=ai_data.get("interested", False))
                 return
 
         except Exception as e:
             print(f"[POST_CALL] 💥 Critical error during processing: {e}")
+            if user_id:
+                supabase_service.log_meeting(user_id, agent_id, call_id, status="failed", error_reason=f"Internal Server Error: {str(e)}")
             return
             
     print(f"[POST_CALL] 🛑 Max retries reached for {call_id}. Tabbly did not provide JSON data in time.")

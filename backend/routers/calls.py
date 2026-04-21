@@ -53,8 +53,26 @@ def trigger_call(req: TriggerCallRequest, background_tasks: BackgroundTasks, use
             # We schedule the processing proactively. No webhook needed.
             # It will wait internally for the call to finish and JSON to generate.
             print(f"[TRIGGER] ⚡ Scheduling proactive outcome check for {call_id}...")
-            background_tasks.add_task(post_call_service.process_call_results, call_id, agent_id=req.agent_id)
+            background_tasks.add_task(post_call_service.process_call_results, call_id, agent_id=req.agent_id, user_id=user_id)
             
         return {"success": True, "call_id": call_id, "raw": result}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/meeting-logs")
+def get_meeting_logs_endpoint(user_id: str = Depends(get_user_id)):
+    """Fetches meeting logs and merges them with agent names."""
+    try:
+        logs = supabase_service.get_meeting_logs(user_id)
+        
+        # We need agent names. We'll fetch them from tabbly or agent_mappings but we don't store names in agent_mappings currently.
+        # Actually a quick way is to just fetch tabbly agents and build a map.
+        raw_agents = tabbly.get_agents()
+        agent_names = {str(a.get("id")): a.get("agent_name", "Unknown Agent") for a in raw_agents}
+        
+        for log in logs:
+            log["agent_name"] = agent_names.get(str(log.get("agent_id")), "Unknown Agent")
+            
+        return {"success": True, "logs": logs}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

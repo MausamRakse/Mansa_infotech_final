@@ -63,3 +63,32 @@ def delete_agent_mapping(agent_id: str):
         print(f"Error deleting agent mapping: {e}")
         raise
 
+def log_meeting(user_id: str, agent_id: str, call_id: str, status: str, 
+                extracted_email: str = None, meeting_topic: str = None, 
+                is_interested: bool = None, error_reason: str = None):
+    """Logs the outcome of a meeting booking attempt."""
+    try:
+        data = {
+            "user_id": user_id,
+            "agent_id": str(agent_id),
+            "call_id": str(call_id),
+            "status": status,
+            "extracted_email": extracted_email,
+            "meeting_topic": meeting_topic,
+            "is_interested": is_interested,
+            "error_reason": error_reason
+        }
+        supabase.table('meeting_logs').insert(data).execute()
+        print(f"📝 Meeting log saved: {status} for Call {call_id}")
+    except Exception as e:
+        print(f"⚠️ Error logging meeting: {e}")
+
+def get_meeting_logs(user_id: str):
+    """Fetches meeting logs for the user."""
+    try:
+        response = supabase.table('meeting_logs').select('*').eq('user_id', user_id).order('created_at', desc=True).execute()
+        return response.data
+    except Exception as e:
+        print(f"Error fetching meeting logs: {e}")
+        return []
+
