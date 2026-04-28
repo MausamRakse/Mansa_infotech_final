@@ -1,5 +1,14 @@
 from middleware.auth import supabase
 
+def get_user_profile(user_id: str):
+    """Fetches user profile including cal_api_key and cal_event_type_id."""
+    try:
+        response = supabase.table('profiles').select('*').eq('id', user_id).execute()
+        return response.data[0] if response.data else {}
+    except Exception as e:
+        print(f"Error fetching user profile: {e}")
+        return {}
+
 def add_agent_mapping(agent_id: str, user_id: str, cal_api_key: str = "", cal_event_type_id: str = ""):
     """Maps a Tabbly agent_id to a Supabase user_id with optional config."""
     try:

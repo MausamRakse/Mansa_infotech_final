@@ -55,6 +55,12 @@ export const createCampaign = (data: CreateCampaignPayload) =>
 export const updateCampaignApi = (campaign_id: number, current_status: string) =>
   api.post("campaigns/update", { campaign_id, current_status }).then(r => r.data);
 
+export const getUser = () =>
+  api.get("users/me").then(r => r.data);
+
+export const updateUserCalSettings = (cal_api_key: string, cal_event_type_id: string) =>
+  api.post("users/me/cal-settings", { cal_api_key, cal_event_type_id }).then(r => r.data);
+
 export interface CreateAgentPayload {
   agent_name: string;
   custom_first_line: string;

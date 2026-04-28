@@ -28,8 +28,16 @@ def extract_details_from_transcript(transcript):
 
     print(f"[GEMINI] 🤖 Analyzing transcript (Length: {len(transcript)} chars)...")
     
+    now_ist = datetime.utcnow() + timedelta(hours=5, minutes=30)
+    current_date_str = now_ist.strftime("%Y-%m-%d")
+    current_time_str = now_ist.strftime("%I:%M %p")
+
     prompt = f"""
 You are an expert AI system for extracting and CORRECTING meeting details from noisy, multi-language call transcripts.
+
+IMPORTANT CONTEXT:
+- TODAY'S DATE: {current_date_str}
+- CURRENT TIME: {current_time_str}
 
 The transcript may include:
 - Speech recognition errors
@@ -104,7 +112,8 @@ If still ambiguous, return null.
 ------------------------
 
 7. DATE & TIME:
-- "tomorrow" → 2026-04-22
+- Resolve relative dates ("tomorrow", "today", "next monday") relative to TODAY ({current_date_str}).
+- The date MUST be in the future (on or after {current_date_str}).
 - Convert time to: HH:MM AM/PM
 
 ------------------------

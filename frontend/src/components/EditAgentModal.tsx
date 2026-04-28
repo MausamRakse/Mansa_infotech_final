@@ -35,10 +35,7 @@ const EditAgentModal = ({ agent, onClose }: Props) => {
     if (!formData.custom_first_line.trim()) newErrors.custom_first_line = true;
     if (!formData.prompt_text.trim()) newErrors.prompt_text = true;
 
-    if (formData.enable_calendar_booking) {
-      if (!formData.cal_api_key.trim()) newErrors.cal_api_key = true;
-      if (!formData.cal_event_type_id.trim()) newErrors.cal_event_type_id = true;
-    }
+    // cal_api_key and cal_event_type_id are now strictly optional so no validation needed here
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -74,8 +71,9 @@ const EditAgentModal = ({ agent, onClose }: Props) => {
       });
       toast.success('Agent updated successfully!');
       onClose();
-    } catch (error) {
-      toast.error('Failed to update agent');
+    } catch (error: any) {
+      const errDetail = error.response?.data?.detail || 'Failed to update agent';
+      toast.error(errDetail);
     } finally {
       setLoading(false);
     }
@@ -191,28 +189,34 @@ const EditAgentModal = ({ agent, onClose }: Props) => {
             </div>
 
             {formData.enable_calendar_booking && (
-              <div className="grid grid-cols-2 gap-4 animate-in slide-in-from-top-2 duration-200">
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[12px] font-bold text-surface-foreground uppercase tracking-tight">Cal.com API Key</label>
-                  <input
-                    type="password"
-                    value={formData.cal_api_key}
-                    onChange={e => setFormData({ ...formData, cal_api_key: e.target.value })}
-                    className={`border rounded-[8px] px-3 py-2 text-[13px] bg-muted/20 text-surface-foreground outline-none focus:border-primary transition-all ${errors.cal_api_key ? 'border-error' : 'border-border'}`}
-                    placeholder="cal_live_..."
-                  />
-                  {errors.cal_api_key && <span className="text-[11px] text-error">Required</span>}
+              <div className="animate-in slide-in-from-top-2 duration-200 flex flex-col gap-4">
+                <div className="bg-primary/10 text-primary border border-primary/20 px-3 py-2 rounded-[8px] text-[12px] flex items-center gap-2">
+                  <span className="text-[16px]">💡</span>
+                  <span>Please put your own API key and Event ID. Leave blank to use system defaults.</span>
                 </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[12px] font-bold text-surface-foreground uppercase tracking-tight">Event Type ID</label>
-                  <input
-                    type="text"
-                    value={formData.cal_event_type_id}
-                    onChange={e => setFormData({ ...formData, cal_event_type_id: e.target.value })}
-                    className={`border rounded-[8px] px-3 py-2 text-[13px] bg-muted/20 text-surface-foreground outline-none focus:border-primary transition-all ${errors.cal_event_type_id ? 'border-error' : 'border-border'}`}
-                    placeholder="e.g. 1599599"
-                  />
-                  {errors.cal_event_type_id && <span className="text-[11px] text-error">Required</span>}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[12px] font-bold text-surface-foreground uppercase tracking-tight">Cal.com API Key</label>
+                    <input
+                      type="password"
+                      value={formData.cal_api_key}
+                      onChange={e => setFormData({ ...formData, cal_api_key: e.target.value })}
+                      className={`border rounded-[8px] px-3 py-2 text-[13px] bg-muted/20 text-surface-foreground outline-none focus:border-primary transition-all ${errors.cal_api_key ? 'border-error' : 'border-border'}`}
+                      placeholder="cal_live_..."
+                    />
+                    {errors.cal_api_key && <span className="text-[11px] text-error">Required</span>}
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[12px] font-bold text-surface-foreground uppercase tracking-tight">Event Type ID</label>
+                    <input
+                      type="text"
+                      value={formData.cal_event_type_id}
+                      onChange={e => setFormData({ ...formData, cal_event_type_id: e.target.value })}
+                      className={`border rounded-[8px] px-3 py-2 text-[13px] bg-muted/20 text-surface-foreground outline-none focus:border-primary transition-all ${errors.cal_event_type_id ? 'border-error' : 'border-border'}`}
+                      placeholder="e.g. 1599599"
+                    />
+                    {errors.cal_event_type_id && <span className="text-[11px] text-error">Required</span>}
+                  </div>
                 </div>
               </div>
             )}

@@ -36,9 +36,17 @@ def trigger_call(req: TriggerCallRequest, background_tasks: BackgroundTasks, use
         availability_instruction = ""
         if is_meeting_enabled:
             print(f"[TRIGGER] 📅 Meeting booking is ENABLED for agent {req.agent_id}. Fetching availability...")
+            api_key = agent_map.get('cal_api_key')
+            event_type_id = agent_map.get('cal_event_type_id')
+            
+            if not api_key or not event_type_id:
+                user_profile = supabase_service.get_user_profile(user_id)
+                api_key = api_key or user_profile.get('cal_api_key')
+                event_type_id = event_type_id or user_profile.get('cal_event_type_id')
+                
             availability_instruction = cal.build_availability_instruction(
-                api_key=agent_map.get('cal_api_key'),
-                event_type_id=agent_map.get('cal_event_type_id')
+                api_key=api_key,
+                event_type_id=event_type_id
             )
         else:
             print(f"[TRIGGER] 🔇 Meeting booking is DISABLED for agent {req.agent_id}. Skipping availability.")
