@@ -4,12 +4,47 @@ load_dotenv(override=True)
 
 TABBLY_API_KEY   = os.getenv("TABBLY_API_KEY")
 TABBLY_ORG_ID    = os.getenv("TABBLY_ORG_ID")
-TABBLY_CALL_FROM = os.getenv("TABBLY_CALL_FROM_NUMBER")
+
+def format_phone_e164(phone: str) -> str:
+    if not phone:
+        return ""
+    cleaned = "".join(c for c in str(phone) if c.isdigit() or c == "+")
+    if cleaned and not cleaned.startswith("+"):
+        cleaned = "+" + cleaned
+    return cleaned
+
+raw_call_from = os.getenv("TABBLY_CALL_FROM_NUMBER") or "+918035736739"
+TABBLY_CALL_FROM = format_phone_e164(raw_call_from)
 
 if not TABBLY_ORG_ID:
     raise ValueError("TABBLY_ORG_ID not set")
 
 BASE = "https://www.tabbly.io"
+
+def get_valid_voice_id(api_key: str, requested_vid: int) -> int:
+    # Map frontend options: Voice 1 -> 125 (Ara), Voice 2 -> 93 (Akash), Voice 3 -> 92 (Asha)
+    mapping = {
+        1: 125,
+        2: 93,
+        3: 92
+    }
+    mapped_id = mapping.get(requested_vid, requested_vid)
+    
+    try:
+        r = requests.get('https://www.tabbly.io/api/get-voices', params={'api_key': api_key}, timeout=5)
+        if r.status_code == 200:
+            voices = r.json().get('voices', [])
+            valid_ids = [v.get('id') for v in voices if v.get('id') is not None]
+            if mapped_id in valid_ids:
+                return mapped_id
+            if 125 in valid_ids:
+                return 125
+            if valid_ids:
+                return valid_ids[0]
+    except Exception as e:
+        print(f"Error fetching voice list: {e}")
+        
+    return mapped_id
 
 def create_agent(agent_name, custom_first_line, prompt_text,
                  stt_language="en", voice_id=1, enable_calendar_booking="yes"):
@@ -17,15 +52,21 @@ def create_agent(agent_name, custom_first_line, prompt_text,
     Maps to: POST https://www.tabbly.io/api/create-agent
     Returns: agent_id (string) or raises exception
     """
+    booking_val = 1
+    if enable_calendar_booking in [False, 0, "0", "no", "disabled"]:
+        booking_val = 0
+
+    validated_voice_id = get_valid_voice_id(TABBLY_API_KEY, int(voice_id))
+
     payload = {
         "api_key": TABBLY_API_KEY,
         "agent_name": agent_name,
         "custom_first_line": custom_first_line,
         "stt_language": stt_language,
-        "voice_id": int(voice_id),
+        "voice_id": validated_voice_id,
         "phone_number": TABBLY_CALL_FROM,
         "prompt_text": prompt_text,
-        "enable_calendar_booking": enable_calendar_booking,
+        "enable_calendar_booking": booking_val,
     }
     r = requests.post(f"{BASE}/api/create-agent",
                       headers={"Content-Type": "application/json",
@@ -51,7 +92,7 @@ def trigger_call(agent_id, called_to, custom_instruction="", custom_first_line="
     payload = {
         "organization_id": int(os.getenv("TABBLY_ORG_ID")),
         "use_agent_id": parsed_agent_id,
-        "called_to": called_to,
+        "called_to": format_phone_e164(called_to),
         "call_from": TABBLY_CALL_FROM,
         "custom_first_line": custom_first_line or "Hello! How can I assist you today?",
         "custom_instruction": custom_instruction,
@@ -71,16 +112,29 @@ def get_agents():
     r.raise_for_status()
     return r.json().get("data", [])
 
-def update_agent(agent_id, agent_name, prompt_text, voice_id=1, status="active"):
+def update_agent(agent_id, agent_name, prompt_text, voice_id=1, custom_first_line="Hello!", stt_language="en", enable_calendar_booking="yes"):
+    booking_val = 1
+    if enable_calendar_booking in [False, 0, "0", "no", "disabled"]:
+        booking_val = 0
+
+    validated_voice_id = get_valid_voice_id(TABBLY_API_KEY, int(voice_id))
+
     payload = {
         "api_key": TABBLY_API_KEY,
         "agent_id": int(agent_id),
         "agent_name": agent_name,
+        "custom_first_line": custom_first_line,
+        "stt_language": stt_language,
+        "voice_id": validated_voice_id,
+        "phone_number": TABBLY_CALL_FROM,
         "prompt_text": prompt_text,
-        "voice_id": int(voice_id),
-        "status": status
+        "enable_calendar_booking": booking_val,
     }
-    r = requests.post(f"{BASE}/api/update-agent", json=payload, headers={"Content-Type": "application/json"})
+    r = requests.post(f"{BASE}/api/create-agent",
+                      headers={"Content-Type": "application/json",
+                               "Accept": "application/json",
+                               "X-Requested-With": "XMLHttpRequest"},
+                      json=payload)
     r.raise_for_status()
     return r.json()
 

@@ -108,7 +108,10 @@ def update_agent(req: UpdateAgentRequest, user_id: str = Depends(get_user_id)):
                 agent_id=req.agent_id,
                 agent_name=req.agent_name,
                 prompt_text=req.prompt_text,
-                voice_id=req.voice_id
+                voice_id=req.voice_id,
+                custom_first_line=req.custom_first_line,
+                stt_language=req.stt_language,
+                enable_calendar_booking="yes" if req.enable_calendar_booking else "no"
             )
             # Update Supabase mapping with new config
             supabase_service.update_agent_mapping(
