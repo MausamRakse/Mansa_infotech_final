@@ -70,6 +70,7 @@ export interface CreateAgentPayload {
   enable_calendar_booking: boolean;
   cal_api_key?: string;
   cal_event_type_id?: string;
+  phone_number?: string;
 }
 
 export interface UpdateAgentPayload extends CreateAgentPayload {
@@ -104,6 +105,7 @@ export interface Agent {
   cal_api_key?: string;
   cal_event_type_id?: string;
   category?: "customer_care" | "growth" | "custom";
+  phone_number?: string;
 }
 
 export interface CallLog {

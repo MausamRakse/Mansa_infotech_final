@@ -36,7 +36,10 @@ const AgentCard = ({ agent, onEdit, onTriggerCall }: AgentCardProps) => {
       </div>
 
       <div className="flex-1">
-        <h3 className="text-[18px] font-bold text-surface-foreground mb-2 leading-tight group-hover:text-primary transition-colors">{agent.name}</h3>
+        <h3 className="text-[18px] font-bold text-surface-foreground mb-1 leading-tight group-hover:text-primary transition-colors">{agent.name}</h3>
+        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-md mb-3">
+          📞 {agent.phone_number || "+91 80357 36739"}
+        </span>
         <p className="text-[14px] text-textMuted line-clamp-2">
           {agent.prompt.split('\n')[0]}
         </p>

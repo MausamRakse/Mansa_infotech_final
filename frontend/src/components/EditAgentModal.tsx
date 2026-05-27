@@ -9,6 +9,10 @@ interface Props {
   onClose: () => void;
 }
 
+const AVAILABLE_PHONE_NUMBERS = [
+  { value: '+918035736739', label: '+91 80357 36739' }
+];
+
 const EditAgentModal = ({ agent, onClose }: Props) => {
   const [loading, setLoading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -24,6 +28,7 @@ const EditAgentModal = ({ agent, onClose }: Props) => {
     enable_calendar_booking: agent.meeting_enabled,
     cal_api_key: agent.cal_api_key || 'cal_live_69db2c652382b5e55d48ce9aa16c7a4c',
     cal_event_type_id: agent.cal_event_type_id || '4877569',
+    phone_number: agent.phone_number || '+918035736739',
   });
 
   const [errors, setErrors] = useState<Record<string, boolean>>({});
@@ -55,6 +60,7 @@ const EditAgentModal = ({ agent, onClose }: Props) => {
           enable_calendar_booking: formData.enable_calendar_booking,
           cal_api_key: formData.cal_api_key,
           cal_event_type_id: formData.cal_event_type_id,
+          phone_number: formData.phone_number,
         });
       }
 
@@ -68,6 +74,7 @@ const EditAgentModal = ({ agent, onClose }: Props) => {
         meeting_enabled: formData.enable_calendar_booking,
         cal_api_key: formData.cal_api_key,
         cal_event_type_id: formData.cal_event_type_id,
+        phone_number: formData.phone_number,
       });
       toast.success('Agent updated successfully!');
       onClose();
@@ -170,6 +177,19 @@ const EditAgentModal = ({ agent, onClose }: Props) => {
                 <option value={3}>Voice 3 (Neutral)</option>
               </select>
             </div>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[13px] font-semibold text-surface-foreground">select phone</label>
+            <select
+              value={formData.phone_number}
+              onChange={e => setFormData({ ...formData, phone_number: e.target.value })}
+              className="border border-border rounded-[8px] px-3 py-2 text-[14px] bg-muted/30 text-surface-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
+            >
+              {AVAILABLE_PHONE_NUMBERS.map(num => (
+                <option key={num.value} value={num.value}>{num.label}</option>
+              ))}
+            </select>
           </div>
 
           <div className="flex flex-col gap-4 py-3 border-t border-border mt-2">
