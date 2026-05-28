@@ -126,7 +126,7 @@ const Settings = () => {
                   type="text"
                   value={calEventTypeId}
                   onChange={e => setCalEventTypeId(e.target.value)}
-                  placeholder="e.g. 1599599"
+                  placeholder="e.g. 1599599 (optional, leave blank to dynamically resolve)"
                   className="border border-border rounded-[8px] px-3 py-2 text-[14px] bg-muted/30 text-surface-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all w-full"
                 />
               </div>

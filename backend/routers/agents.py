@@ -94,6 +94,7 @@ class UpdateAgentRequest(BaseModel):
     enable_calendar_booking: bool = True
     cal_api_key: str = ""
     cal_event_type_id: str = ""
+    status: str = "active"
 
 
 class DeleteAgentRequest(BaseModel):
@@ -111,7 +112,8 @@ def update_agent(req: UpdateAgentRequest, user_id: str = Depends(get_user_id)):
                 voice_id=req.voice_id,
                 custom_first_line=req.custom_first_line,
                 stt_language=req.stt_language,
-                enable_calendar_booking="yes" if req.enable_calendar_booking else "no"
+                enable_calendar_booking="yes" if req.enable_calendar_booking else "no",
+                status=req.status
             )
             # Update Supabase mapping with new config
             supabase_service.update_agent_mapping(

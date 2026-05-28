@@ -11,8 +11,7 @@ load_dotenv()
 API_KEY = os.getenv("TABBLY_API_KEY")
 ORG_ID = os.getenv("TABBLY_ORG_ID")
 AGENT_ID = os.getenv("TABBLY_AGENT_ID")
-CAL_API_KEY = os.getenv("CAL_API_KEY")
-CAL_EVENT_TYPE_ID = os.getenv("CAL_EVENT_TYPE_ID", "1599599")
+# Global configurations removed to ensure strict database-driven credentials
 MONGODB_URI = os.getenv("MONGODB_URI")
 
 TABBLY_CALL_LOGS_URL = "https://www.tabbly.io/dashboard/agents/endpoints/call-logs-v2"
@@ -246,15 +245,87 @@ def save_to_mongodb(participant_identity, json_output_str, details=None, transcr
             client.close()
 
 def book_via_cal_com(details):
+    import sys
+    import os
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), "backend"))
+    from services import cal, supabase_service
+    from middleware.auth import supabase
+
+    custom_key = None
+    custom_eid = None
+
+    agent_id = os.getenv("TABBLY_AGENT_ID")
+    user_id = None
+
+    if agent_id:
+        try:
+            resp = supabase.table('agent_mappings').select('*').eq('agent_id', str(agent_id)).execute()
+            if resp.data:
+                mapping = resp.data[0]
+                user_id = mapping.get('user_id')
+                if mapping.get('cal_api_key'):
+                    custom_key = mapping['cal_api_key']
+                if mapping.get('cal_event_type_id'):
+                    custom_eid = mapping['cal_event_type_id']
+                print(f"[CAL_JSON] Loaded agent-specific Cal.com credentials for agent {agent_id}")
+        except Exception as e:
+            print(f"[CAL_JSON] Warning loading agent credentials: {e}")
+
+    if user_id:
+        try:
+            oauth_token = cal.get_valid_cal_token_for_user(user_id)
+            if oauth_token:
+                custom_key = oauth_token
+                print(f"[CAL_JSON] Using Cal.com OAuth token for user {user_id}")
+        except Exception as e:
+            print(f"[CAL_JSON] Warning loading OAuth credentials: {e}")
+
+    if user_id and (not custom_key or not custom_eid):
+        try:
+            profile = supabase_service.get_user_profile(user_id)
+            if profile:
+                if not custom_key and profile.get('cal_api_key'):
+                    custom_key = profile['cal_api_key']
+                if not custom_eid and profile.get('cal_event_type_id'):
+                    custom_eid = profile['cal_event_type_id']
+                print(f"[CAL_JSON] Loaded custom credentials from profile for user {user_id}")
+        except Exception as e:
+            print(f"[CAL_JSON] Warning loading profile credentials: {e}")
+
+    if custom_key and not custom_eid:
+        try:
+            resolved_eid = cal.get_default_event_type_id(custom_key)
+            if resolved_eid:
+                custom_eid = resolved_eid
+                print(f"[CAL_JSON] Loaded dynamically resolved default eventTypeId {custom_eid} from Cal.com")
+        except Exception as e:
+            print(f"[CAL_JSON] Warning dynamically resolving eventTypeId: {e}")
+
+    # Pre-flight validations before Cal.com booking API request
+    resolved_oauth_token = custom_key if (custom_key and not str(custom_key).startswith("cal_live_")) else None
+    resolved_api_key = custom_key if (custom_key and str(custom_key).startswith("cal_live_")) else None
+    
+    if not custom_eid:
+        raise Exception("Missing Cal.com event type ID")
+        
+    if not resolved_api_key and not resolved_oauth_token:
+        raise Exception("Missing Cal.com credentials")
+        
+    # Detailed debug logging
+    print(f"Resolved agent_id: {agent_id}")
+    print(f"Resolved user_id: {user_id}")
+    print(f"Resolved event_type_id: {custom_eid}")
+    print("OAuth/API credentials loaded successfully")
+
     headers = {
         "cal-api-version": "2024-08-13",
-        "Authorization": f"Bearer {CAL_API_KEY}",
+        "Authorization": f"Bearer {custom_key}",
         "Content-Type": "application/json"
     }
     
     payload = {
         "start": details["start_time_iso"],
-        "eventTypeId": int(CAL_EVENT_TYPE_ID),
+        "eventTypeId": int(custom_eid),
         "attendee": {
             "name": details["name"],
             "email": details["email"],

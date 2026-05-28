@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
-from routers import agents, calls, logs, campaigns, users, webhooks
+from routers import agents, calls, logs, campaigns, users, webhooks, cal_auth
 
 # Configure logging to show in console
 logging.basicConfig(
@@ -29,6 +29,7 @@ app.include_router(logs.router, prefix="/api")
 app.include_router(campaigns.router, prefix="/api")
 app.include_router(users.router, prefix="/api")
 app.include_router(webhooks.router, prefix="/api")
+app.include_router(cal_auth.router, prefix="/api")
 
 # Serve the static React build inside the unified server
 frontend_dist = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../frontend/dist")

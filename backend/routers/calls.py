@@ -46,7 +46,9 @@ def trigger_call(req: TriggerCallRequest, background_tasks: BackgroundTasks, use
                 
             availability_instruction = cal.build_availability_instruction(
                 api_key=api_key,
-                event_type_id=event_type_id
+                event_type_id=event_type_id,
+                user_id=user_id,
+                agent_id=req.agent_id
             )
         else:
             print(f"[TRIGGER] 🔇 Meeting booking is DISABLED for agent {req.agent_id}. Skipping availability.")

@@ -5,7 +5,11 @@ from dotenv import load_dotenv
 from datetime import datetime, timedelta
 
 # Load environment variables
-load_dotenv()
+env_path = os.path.join(os.path.dirname(__file__), 'backend', '.env')
+if os.path.exists(env_path):
+    load_dotenv(dotenv_path=env_path)
+else:
+    load_dotenv()
 
 # Configuration
 API_KEY = os.getenv("TABBLY_API_KEY")
@@ -13,8 +17,7 @@ ORG_ID = os.getenv("TABBLY_ORG_ID")
 AGENT_ID = os.getenv("TABBLY_AGENT_ID")
 CALL_FROM = os.getenv("TABBLY_CALL_FROM_NUMBER")
 CALLED_TO = os.getenv("TABBLY_PHONE_NUMBER")
-CAL_API_KEY = os.getenv("CAL_API_KEY")
-CAL_EVENT_TYPE_ID = os.getenv("CAL_EVENT_TYPE_ID")
+# Global configurations removed to ensure strict database-driven credentials
 
 CUSTOM_FIRST_LINE = "Hello! I am the automated assistant from Mansa Infotech. I am calling to discuss our IT services."
 
@@ -51,8 +54,24 @@ def get_window_name(hour):
     elif 17 <= hour < 19: return "5 PM to 7 PM"
     return "Other Times"
 
-def fetch_cal_availability():
+def fetch_cal_availability(api_key, event_type_id, user_id=None):
     """Pre-fetch available slots from Cal.com for the next 5 days, 9 AM - 6 PM IST, grouped by 2-hour windows."""
+    # Pre-flight validations before Cal.com slots API request
+    resolved_oauth_token = api_key if (api_key and not str(api_key).startswith("cal_live_")) else None
+    resolved_api_key = api_key if (api_key and str(api_key).startswith("cal_live_")) else None
+    
+    if not event_type_id:
+        raise Exception("Missing Cal.com event type ID")
+        
+    if not resolved_api_key and not resolved_oauth_token:
+        raise Exception("Missing Cal.com credentials")
+        
+    # Detailed debug logging
+    print(f"Resolved agent_id: {AGENT_ID}")
+    print(f"Resolved user_id: {user_id}")
+    print(f"Resolved event_type_id: {event_type_id}")
+    print("OAuth/API credentials loaded successfully")
+
     results = {}  # { "2026-02-27": { "9 AM to 11 AM": ["9:00 AM", ...], ... }, ... }
     
     for day_offset in range(0, 6):  # Today + Next 5 days
@@ -65,8 +84,8 @@ def fetch_cal_availability():
         
         url = "https://api.cal.com/v1/slots"
         params = {
-            "eventTypeId": CAL_EVENT_TYPE_ID,
-            "apiKey": CAL_API_KEY,
+            "eventTypeId": event_type_id,
+            "apiKey": api_key,
             "startTime": start,
             "endTime": end,
         }
@@ -92,28 +111,87 @@ def fetch_cal_availability():
     return results
 
 def trigger_outbound_call():
-    """Fetch availability, inject into custom_instruction, trigger call."""
+    """Fetch availability dynamically from database, inject into custom_instruction, trigger call."""
     
-    # Step 1: Pre-fetch Cal.com availability for next 5 days
-    print("Step 1: Fetching Cal.com availability (next 5 days, 9 AM - 6 PM IST)...")
-    availability = fetch_cal_availability()
+    # Step 1: Resolve agent credentials dynamically from Supabase database
+    print("Step 1: Resolving agent credentials dynamically from database...")
+    import sys
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), "backend"))
+    from middleware.auth import supabase
+    from services import cal, supabase_service
     
-    if availability:
-        lines = ["AVAILABLE CONSULTATION SLOTS (grouped by 2-hour windows, all times in IST):"]
-        total_slots = 0
-        for day, windows in availability.items():
-            lines.append(f"\nDate: {day}")
-            for window, slots in windows.items():
-                slot_text = ", ".join(slots)
-                lines.append(f"  - Window [{window}]: {slot_text}")
-                total_slots += len(slots)
-        lines.append("\nWhen the user asks about availability, sequentially offer these 2-hour windows.")
-        lines.append("If they reject a window, offer the next one. Only read the specific slots if they agree to the window.")
-        custom_instruction = "\n".join(lines)
-        print(f"  Loaded {total_slots} total slots across {len(availability)} days")
+    custom_key = None
+    custom_eid = None
+    user_id = None
+    
+    try:
+        resp = supabase.table('agent_mappings').select('*').eq('agent_id', str(AGENT_ID)).execute()
+        if resp.data:
+            mapping = resp.data[0]
+            user_id = mapping.get('user_id')
+            if mapping.get('cal_api_key'):
+                custom_key = mapping['cal_api_key']
+            if mapping.get('cal_event_type_id'):
+                custom_eid = mapping['cal_event_type_id']
+            print(f"  Loaded agent-specific Cal.com credentials for agent {AGENT_ID}")
+    except Exception as e:
+        print(f"  Warning loading credentials from database: {e}")
+        
+    if user_id:
+        try:
+            oauth_token = cal.get_valid_cal_token_for_user(user_id)
+            if oauth_token:
+                custom_key = oauth_token
+                print(f"  Using Cal.com OAuth token for user {user_id}")
+        except Exception as e:
+            print(f"  Warning checking OAuth credentials: {e}")
+            
+    if user_id and (not custom_key or not custom_eid):
+        try:
+            profile = supabase_service.get_user_profile(user_id)
+            if profile:
+                if not custom_key and profile.get('cal_api_key'):
+                    custom_key = profile['cal_api_key']
+                if not custom_eid and profile.get('cal_event_type_id'):
+                    custom_eid = profile['cal_event_type_id']
+                print(f"  Loaded custom credentials from profile for user {user_id}")
+        except Exception as e:
+            print(f"  Warning loading profile credentials: {e}")
+            
+    if custom_key and not custom_eid:
+        try:
+            resolved = cal.get_default_event_type_id(custom_key)
+            if resolved:
+                custom_eid = resolved
+                print(f"  Dynamically resolved default eventTypeId {custom_eid} from Cal.com")
+        except Exception as e:
+            print(f"  Warning dynamically resolving eventTypeId: {e}")
+            
+    # Validate that we have connected credentials
+    if not custom_key or not custom_eid:
+        print("❌ Error: Cal.com calendar is not integrated for this agent. Booking is disabled.")
+        custom_instruction = "IMPORTANT: Meeting booking is currently disabled. Do NOT suggest any dates or times to the user. Inform them that booking is unavailable if they ask."
     else:
-        custom_instruction = "No slots are available for the next 5 days. Inform the user and apologize."
-        print("  No slots found.")
+        print(f"  Using dynamic Event Type ID: {custom_eid}")
+        print("  Fetching Cal.com availability (next 5 days, 9 AM - 6 PM IST)...")
+        availability = fetch_cal_availability(custom_key, custom_eid, user_id=user_id)
+        
+        if availability:
+            lines = ["AVAILABLE CONSULTATION SLOTS (grouped by 2-hour windows, all times in IST):"]
+            total_slots = 0
+            for day, windows in availability.items():
+                lines.append(f"\nDate: {day}")
+                for window, slots in windows.items():
+                    slot_text = ", ".join(slots)
+                    lines.append(f"  - Window [{window}]: {slot_text}")
+                    total_slots += len(slots)
+            lines.append("\nWhen the user asks about availability, sequentially offer these 2-hour windows.")
+            lines.append("If they reject a window, offer the next one. Only read the specific slots if they agree to the window.")
+            custom_instruction = "\n".join(lines)
+            print(f"  Loaded {total_slots} total slots across {len(availability)} days")
+        else:
+            custom_instruction = "No slots are available for the next 5 days. Inform the user and apologize."
+            print("  No slots found.")
     
     # Step 2: Trigger the call with pre-loaded availability
     print(f"\nStep 2: Triggering call to {CALLED_TO}...")
