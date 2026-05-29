@@ -8,3 +8,4 @@ recordings/
 transcripts/
 .DS_Store
 *.pyc
+*.mp3

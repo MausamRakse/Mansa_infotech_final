@@ -8,6 +8,7 @@ const Campaigns = () => {
   const [agents, setAgents] = useState<Agent[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [previewData, setPreviewData] = useState<any[]>([]);
+  const [showSampleWarning, setShowSampleWarning] = useState(false);
   
   const [formData, setFormData] = useState({
     campaign_name: '',
@@ -52,15 +53,45 @@ const Campaigns = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Safeguard 1: Reject if the uploaded file has the default sample name
+    if (file.name.toLowerCase() === 'tabbly_contacts_sample.csv') {
+      setShowSampleWarning(true);
+      setPreviewData([]);
+      toast.error('Template file detected. Please upload your own customized contact list instead.', {
+        duration: 6000,
+        icon: '⚠️'
+      });
+      e.target.value = '';
+      return;
+    }
+
+    setShowSampleWarning(false);
     const reader = new FileReader();
     reader.onload = (evt) => {
       try {
         const bstr = evt.target?.result;
-        // XLSX.read handles both CSV and Excel gracefully
         const wb = XLSX.read(bstr, { type: 'binary' });
         const wsname = wb.SheetNames[0];
         const ws = wb.Sheets[wsname];
-        const data = XLSX.utils.sheet_to_json(ws);
+        const data: any[] = XLSX.utils.sheet_to_json(ws);
+
+        // Safeguard 2: Reject if the uploaded file's contents match the exact sample rows unmodified
+        const isDefaultTemplate = data.length === 3 && 
+          data[0]?.participant_identity === 'Rahul Sharma' && 
+          data[1]?.Jane_Smith === 'Jane Smith' || // accommodate standard JSON headers parsing variations
+          (data[0]?.participant_identity === 'Rahul Sharma' && data[1]?.participant_identity === 'Jane Smith' && data[2]?.participant_identity === 'Amit Patel');
+
+        if (isDefaultTemplate) {
+          setShowSampleWarning(true);
+          setPreviewData([]);
+          toast.error('Default sample contents detected. Please prepare your own customized contact list.', {
+            duration: 6000,
+            icon: '⚠️'
+          });
+          e.target.value = '';
+          return;
+        }
+
         setPreviewData(data);
         toast.success(`Loaded ${data.length} contacts from ${file.name.split('.').pop()?.toUpperCase()}`);
       } catch (err) {
@@ -68,6 +99,74 @@ const Campaigns = () => {
       }
     };
     reader.readAsBinaryString(file);
+  };
+
+  const handleDownloadCSV = (e: React.MouseEvent) => {
+    e.preventDefault();
+    
+    if (previewData.length === 0) {
+      toast.success("No data uploaded yet. Downloading a sample file to help you get started.", {
+        duration: 4000,
+        icon: 'ℹ️'
+      });
+      
+      const headers = ['phone_number', 'participant_identity', 'use_agent_id', 'created_by', 'custom_first_line', 'custom_instruction'];
+      const rows = [
+        ['+917359043943', 'Rahul Sharma', '123', 'API', 'Hello Rahul, calling from ABC Corp regarding your inquiry.', 'Mention the Q2 offer and ask about budget timeline.'],
+        ['+14155552671', 'Jane Smith', '123', 'API', 'Hi Jane, this is ABC Corp following up on your request.', 'Discuss the premium plan and check if she reviewed the brochure.'],
+        ['+919876543210', 'Amit Patel', '123', 'API', 'Hello Amit, calling from ABC Corp about your recent inquiry.', 'Focus on Hindi if preferred. Mention discount valid till month end.']
+      ];
+      
+      const escapeCSV = (val: string) => {
+        if (val.includes(',') || val.includes('"') || val.includes('\n')) {
+          return `"${val.replace(/"/g, '""')}"`;
+        }
+        return val;
+      };
+      
+      const csvContent = [
+        headers.join(','),
+        ...rows.map(row => row.map(escapeCSV).join(','))
+      ].join('\n');
+      
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", "tabbly_contacts_sample.csv");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } else {
+      toast.success("Exporting staged campaign contacts to CSV.");
+      
+      const headers = Object.keys(previewData[0]);
+      const rows = previewData.map(row => headers.map(h => row[h] || ''));
+      
+      const escapeCSV = (val: any) => {
+        const str = String(val);
+        if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+          return `"${str.replace(/"/g, '""')}"`;
+        }
+        return str;
+      };
+      
+      const csvContent = [
+        headers.join(','),
+        ...rows.map(row => row.map(escapeCSV).join(','))
+      ].join('\n');
+      
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", "tabbly_contacts_staged.csv");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -246,11 +345,27 @@ const Campaigns = () => {
               <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center text-primary font-bold">3</div>
               <h2 className="text-[18px] font-bold text-surface-foreground">Audience & Contact List</h2>
             </div>
-            <a href="#" className="text-primary text-[14px] hover:underline flex items-center gap-2 font-bold px-4 py-2 bg-primary/5 rounded-lg">
+            <button 
+              onClick={handleDownloadCSV}
+              className="text-primary text-[14px] hover:underline flex items-center gap-2 font-bold px-4 py-2 bg-primary/5 rounded-lg border border-transparent hover:border-primary/20 transition-all cursor-pointer"
+            >
               <Download className="w-4 h-4" />
               Download CSV Template
-            </a>
+            </button>
           </div>
+
+          {showSampleWarning && (
+            <div className="mb-6 p-5 bg-error/5 border border-error/25 rounded-2xl flex gap-3 text-error animate-in slide-in-from-top-2 duration-200">
+              <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+              <div>
+                <h5 className="font-bold text-[13px] uppercase tracking-wide leading-none">Safeguard Validation Blocked</h5>
+                <p className="text-[12px] mt-1.5 leading-relaxed">
+                  You are attempting to upload the default sample template file (<strong>tabbly_contacts_sample.csv</strong>). 
+                  This file is only a formatting reference to show you what data structures are required. Please prepare and upload your own customized contact list instead before launching the campaign.
+                </p>
+              </div>
+            </div>
+          )}
 
           <div className={`
             border-3 border-dashed rounded-[32px] p-12 flex flex-col items-center gap-6 transition-all

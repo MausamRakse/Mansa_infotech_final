@@ -61,6 +61,12 @@ export const getUser = () =>
 export const updateUserCalSettings = (cal_api_key: string, cal_event_type_id: string) =>
   api.post("users/me/cal-settings", { cal_api_key, cal_event_type_id }).then(r => r.data);
 
+export const getCalAuthUrl = (agentId?: string) =>
+  api.get("auth/cal/url" + (agentId ? `?agent_id=${agentId}` : "")).then(r => r.data);
+
+export const disconnectCalApi = () =>
+  api.post("users/me/disconnect-cal").then(r => r.data);
+
 export interface CreateAgentPayload {
   agent_name: string;
   custom_first_line: string;
@@ -75,6 +81,7 @@ export interface CreateAgentPayload {
 
 export interface UpdateAgentPayload extends CreateAgentPayload {
   agent_id: string;
+  status?: string;
 }
 
 export interface TriggerCallPayload {
@@ -117,6 +124,7 @@ export interface CallLog {
   transcript: string | null;
   json_output: string | null;
   agent_name: string;
+  customer_name?: string;
 }
 
 export interface MeetingLog {
@@ -131,6 +139,11 @@ export interface MeetingLog {
   is_interested?: boolean;
   error_reason?: string;
   created_at: string;
+  phone_number?: string;
+  date?: string;
+  recording_url?: string | null;
+  transcript?: string | null;
+  json_output?: string | null;
 }
 
 export const getMeetingLogs = async (): Promise<MeetingLog[]> => {

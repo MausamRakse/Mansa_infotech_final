@@ -22,7 +22,7 @@ def get_me(user = Depends(get_current_user)):
     try:
         conn = psycopg2.connect(DB_URL)
         cur = conn.cursor()
-        cur.execute("SELECT id, email, full_name, cal_api_key, cal_event_type_id FROM public.profiles WHERE id = %s", (user.id,))
+        cur.execute("SELECT id, email, full_name, cal_api_key, cal_event_type_id, cal_refresh_token FROM public.profiles WHERE id = %s", (user.id,))
         profile = cur.fetchone()
         cur.close()
         conn.close()
@@ -34,7 +34,8 @@ def get_me(user = Depends(get_current_user)):
                 "full_name": "New User",
                 "is_new": True,
                 "cal_api_key": "",
-                "cal_event_type_id": ""
+                "cal_event_type_id": "",
+                "cal_connected": False
             }
             
         return {
@@ -43,7 +44,8 @@ def get_me(user = Depends(get_current_user)):
             "full_name": profile[2],
             "is_new": False,
             "cal_api_key": profile[3] or "",
-            "cal_event_type_id": profile[4] or ""
+            "cal_event_type_id": profile[4] or "",
+            "cal_connected": profile[5] is not None
         }
     except Exception as e:
         # Graceful fallback if columns don't exist yet
@@ -55,7 +57,8 @@ def get_me(user = Depends(get_current_user)):
                 "is_new": False,
                 "cal_api_key": "",
                 "cal_event_type_id": "",
-                "error": "Please run the SQL command to add cal_api_key to profiles."
+                "cal_connected": False,
+                "error": "Please run the SQL command to add cal_api_key/oauth columns to profiles."
             }
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -79,5 +82,22 @@ def update_cal_settings(req: CalSettingsRequest, user = Depends(get_current_user
         return {"success": True}
     except Exception as e:
         if "column" in str(e).lower() and "does not exist" in str(e).lower():
-            raise HTTPException(status_code=400, detail="Database schema missing cal_api_key columns. Please run the SQL command.")
+            raise HTTPException(status_code=400, detail="Database schema missing columns. Please run the SQL command.")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/me/disconnect-cal")
+def disconnect_cal(user = Depends(get_current_user)):
+    """Clears Cal.com OAuth tokens from the user's profile."""
+    try:
+        conn = psycopg2.connect(DB_URL)
+        cur = conn.cursor()
+        cur.execute(
+            "UPDATE public.profiles SET cal_access_token = NULL, cal_refresh_token = NULL, cal_token_expiry = NULL WHERE id = %s",
+            (user.id,)
+        )
+        conn.commit()
+        cur.close()
+        conn.close()
+        return {"success": True}
+    except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

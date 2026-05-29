@@ -112,7 +112,7 @@ def get_agents():
     r.raise_for_status()
     return r.json().get("data", [])
 
-def update_agent(agent_id, agent_name, prompt_text, voice_id=1, custom_first_line="Hello!", stt_language="en", enable_calendar_booking="yes"):
+def update_agent(agent_id, agent_name, prompt_text, voice_id=1, custom_first_line="Hello!", stt_language="en", enable_calendar_booking="yes", status="active"):
     booking_val = 1
     if enable_calendar_booking in [False, 0, "0", "no", "disabled"]:
         booking_val = 0
@@ -129,8 +129,9 @@ def update_agent(agent_id, agent_name, prompt_text, voice_id=1, custom_first_lin
         "phone_number": TABBLY_CALL_FROM,
         "prompt_text": prompt_text,
         "enable_calendar_booking": booking_val,
+        "status": status,
     }
-    r = requests.post(f"{BASE}/api/create-agent",
+    r = requests.post(f"{BASE}/api/update-agent",
                       headers={"Content-Type": "application/json",
                                "Accept": "application/json",
                                "X-Requested-With": "XMLHttpRequest"},

@@ -1,18 +1,35 @@
-import { X, Copy, CheckCircle2 } from 'lucide-react';
+import { X, Copy, CheckCircle2, Download } from 'lucide-react';
 import { useState } from 'react';
+import { type CallLog } from '../api/client';
 
 interface Props {
-  transcript: string;
+  log: CallLog;
   onClose: () => void;
+  generateCallFileName: (log: CallLog, extension: string) => string;
 }
 
-const TranscriptModal = ({ transcript, onClose }: Props) => {
+const TranscriptModal = ({ log, onClose, generateCallFileName }: Props) => {
   const [copied, setCopied] = useState(false);
+  const transcript = log.transcript || '';
 
   const handleCopy = () => {
     navigator.clipboard.writeText(transcript);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleDownload = () => {
+    if (!transcript) return;
+    const filename = generateCallFileName(log, "txt");
+    const blob = new Blob([transcript], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -29,7 +46,16 @@ const TranscriptModal = ({ transcript, onClose }: Props) => {
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[13px] font-medium text-textMuted hover:bg-surface hover:text-primary hover:shadow-sm border border-transparent hover:border-border transition-all"
             >
               {copied ? <CheckCircle2 className="w-4 h-4 text-success" /> : <Copy className="w-4 h-4" />}
-              {copied ? 'Copied' : 'Copy'}
+              {copied ? 'Copy' : 'Copy'}
+            </button>
+            <button
+              onClick={handleDownload}
+              disabled={!transcript}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[13px] font-medium text-textMuted hover:bg-surface hover:text-primary hover:shadow-sm border border-transparent hover:border-border transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+              title="Download Transcript"
+            >
+              <Download className="w-4 h-4" />
+              Download
             </button>
             <button onClick={onClose} className="p-1.5 rounded-md text-textMuted hover:bg-surface hover:shadow-sm border border-transparent hover:border-border transition-all">
               <X className="w-5 h-5" />

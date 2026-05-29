@@ -9,8 +9,7 @@ import google.generativeai as genai
 
 logger = logging.getLogger(__name__)
 
-CAL_API_KEY = os.getenv("CAL_API_KEY")
-CAL_EVENT_TYPE_ID = os.getenv("CAL_EVENT_TYPE_ID", "1599599")
+# Global configurations removed to ensure strict database-driven credentials
 CAL_BOOKING_URL = "https://api.cal.com/v2/bookings"
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
@@ -187,33 +186,18 @@ def parse_time_robust(time_str):
 
 import time
 
-def process_call_results(call_id, retries=15, delay=30, agent_id=None, user_id=None):
+def process_call_results(call_id, retries=15, delay=30, agent_id=None, user_id=None, skip_sleep=False):
     """
     Called after a call ends. Fetches results from Tabbly, 
     parses them, and books on Cal.com if interested.
     Includes retries as Tabbly takes time to generate JSON output.
     """
     print(f"\n[POST_CALL] 🚀 Proactive processing scheduled for Call ID: {call_id} (Agent: {agent_id})")
-    print(f"[POST_CALL] ⏳ Waiting 120s (2 mins) for the conversation to finish before checking results...")
-    time.sleep(120) 
+    if not skip_sleep:
+        print(f"[POST_CALL] ⏳ Waiting 120s (2 mins) for the conversation to finish before checking results...")
+        time.sleep(120) 
     
     logger.info(f"Processing post-call results for Call ID: {call_id}")
-    
-    # Pre-fetch agent specific credentials if possible
-    custom_key = CAL_API_KEY
-    custom_eid = CAL_EVENT_TYPE_ID
-    
-    if agent_id:
-        try:
-            from middleware.auth import supabase
-            resp = supabase.table('agent_mappings').select('*').eq('agent_id', str(agent_id)).execute()
-            if resp.data:
-                mapping = resp.data[0]
-                if mapping.get('cal_api_key'): custom_key = mapping['cal_api_key']
-                if mapping.get('cal_event_type_id'): custom_eid = mapping['cal_event_type_id']
-                print(f"[POST_CALL] 🔑 Using personalized Cal.com credentials for agent {agent_id}")
-        except Exception as e:
-            print(f"[POST_CALL] ⚠️ Error fetching special credentials: {e}. Using defaults.")
     
     for attempt in range(retries):
         print(f"[POST_CALL] ⏳ Attempt {attempt + 1}/{retries} - Checking Tabbly for updates...")
@@ -226,6 +210,83 @@ def process_call_results(call_id, retries=15, delay=30, agent_id=None, user_id=N
             continue
 
         log = call_logs[0]
+
+        # Resolve agent_id and user_id dynamically from log and database mappings if not provided
+        current_agent_id = agent_id or log.get("use_agent_id") or log.get("agent_id")
+        current_user_id = user_id
+
+        if current_agent_id and not current_user_id:
+            try:
+                from middleware.auth import supabase
+                resp = supabase.table('agent_mappings').select('user_id').eq('agent_id', str(current_agent_id)).execute()
+                if resp.data:
+                    current_user_id = resp.data[0]['user_id']
+                    print(f"[POST_CALL] 🔍 Dynamically resolved user_id {current_user_id} for agent {current_agent_id}")
+            except Exception as e:
+                print(f"[POST_CALL] ⚠️ Error dynamically resolving user_id: {e}")
+
+        # Resolve Cal.com credentials strictly (NO fallback to global environment keys)
+        custom_key = None
+        custom_eid = None
+
+        if current_user_id:
+            try:
+                from services.cal import get_valid_cal_token_for_user
+                oauth_token = get_valid_cal_token_for_user(current_user_id)
+                if oauth_token:
+                    custom_key = oauth_token
+                    print(f"[POST_CALL] 🔑 Using Cal.com OAuth token for user {current_user_id}")
+            except Exception as e:
+                print(f"[POST_CALL] ⚠️ Error loading OAuth credentials: {e}")
+
+        if current_agent_id:
+            try:
+                from middleware.auth import supabase
+                resp = supabase.table('agent_mappings').select('*').eq('agent_id', str(current_agent_id)).execute()
+                if resp.data:
+                    mapping = resp.data[0]
+                    if not custom_key and mapping.get('cal_api_key'):
+                        custom_key = mapping['cal_api_key']
+                    if mapping.get('cal_event_type_id'):
+                        custom_eid = mapping['cal_event_type_id']
+                    print(f"[POST_CALL] 🔑 Loaded agent-specific Cal.com credentials for agent {current_agent_id}")
+            except Exception as e:
+                print(f"[POST_CALL] ⚠️ Error fetching agent-specific credentials: {e}")
+
+        if current_user_id and (not custom_key or not custom_eid):
+            try:
+                profile = supabase_service.get_user_profile(current_user_id)
+                if profile:
+                    if not custom_key and profile.get('cal_api_key'):
+                        custom_key = profile['cal_api_key']
+                    if not custom_eid and profile.get('cal_event_type_id'):
+                        custom_eid = profile['cal_event_type_id']
+                    print(f"[POST_CALL] 🔑 Loaded custom Cal.com credentials from profile for user {current_user_id}")
+            except Exception as e:
+                print(f"[POST_CALL] ⚠️ Error loading profile credentials: {e}")
+
+        if custom_key and not custom_eid:
+            try:
+                from services.cal import get_default_event_type_id
+                resolved_eid = get_default_event_type_id(custom_key)
+                if resolved_eid:
+                    custom_eid = resolved_eid
+                    print(f"[POST_CALL] 🔑 Dynamically resolved default eventTypeId {custom_eid} for booking")
+            except Exception as e:
+                print(f"[POST_CALL] ⚠️ Error dynamically resolving eventTypeId: {e}")
+
+        # Validate that we have connected credentials
+        if not custom_key or not custom_eid:
+            print("[POST_CALL] ❌ Skip: Cal.com calendar is not integrated for this agent/user. Cannot book.")
+            if current_user_id:
+                supabase_service.log_meeting(
+                    current_user_id, 
+                    current_agent_id, 
+                    call_id, 
+                    status="failed", 
+                    error_reason="Cal.com calendar not connected or configured"
+                )
+            return
         
         # --- NEW CHECK: Respect the Meeting Booking Button ---
         raw_identifiers = log.get("custom_identifiers")
@@ -235,8 +296,8 @@ def process_call_results(call_id, retries=15, delay=30, agent_id=None, user_id=N
         
         if "booking:disabled" in identifiers:
             print(f"[POST_CALL] ⏹️ Booking is DISABLED for this call. Ending process.")
-            if user_id:
-                supabase_service.log_meeting(user_id, agent_id, call_id, status="skipped", error_reason="Booking disabled for this agent")
+            if current_user_id:
+                supabase_service.log_meeting(current_user_id, current_agent_id, call_id, status="skipped", error_reason="Booking disabled for this agent")
             return
         elif "booking:enabled" in identifiers:
             print(f"[POST_CALL] 🏷️ Booking is ENABLED for this call. Proceeding...")
@@ -267,8 +328,8 @@ def process_call_results(call_id, retries=15, delay=30, agent_id=None, user_id=N
 
             if not email_raw:
                 print(f"[POST_CALL] ❌ Skip: No email found in transcript. Cannot book.")
-                if user_id:
-                    supabase_service.log_meeting(user_id, agent_id, call_id, status="failed", error_reason="AI could not extract an email address", meeting_topic=topic, is_interested=ai_data.get("interested", False))
+                if current_user_id:
+                    supabase_service.log_meeting(current_user_id, current_agent_id, call_id, status="failed", error_reason="AI could not extract an email address", meeting_topic=topic, is_interested=ai_data.get("interested", False))
                 return
 
             email_clean = email_raw.replace("-", "").replace(" ", "").lower()
@@ -278,8 +339,8 @@ def process_call_results(call_id, retries=15, delay=30, agent_id=None, user_id=N
             # NO FALLBACKS: If date or time is missing, we stop.
             if not parsed_date or not parsed_time:
                 print(f"[POST_CALL] ❌ Skip: Missing or invalid Date ({date_raw}) or Time ({time_raw}).")
-                if user_id:
-                    supabase_service.log_meeting(user_id, agent_id, call_id, status="failed", error_reason=f"Missing Date or Time (Date: {date_raw}, Time: {time_raw})", extracted_email=email_raw, meeting_topic=topic, is_interested=ai_data.get("interested", False))
+                if current_user_id:
+                    supabase_service.log_meeting(current_user_id, current_agent_id, call_id, status="failed", error_reason=f"Missing Date or Time (Date: {date_raw}, Time: {time_raw})", extracted_email=email_raw, meeting_topic=topic, is_interested=ai_data.get("interested", False))
                 return
 
             # Convert IST to UTC
@@ -287,6 +348,22 @@ def process_call_results(call_id, retries=15, delay=30, agent_id=None, user_id=N
             dt_utc = dt_ist - timedelta(hours=5, minutes=30)
             start_time_iso = dt_utc.strftime("%Y-%m-%dT%H:%M:%S.000Z")
             print(f"[POST_CALL] ⏰ Scheduled for: {dt_ist} IST ({start_time_iso} UTC)")
+
+            # Pre-flight validations before Cal.com booking API request
+            resolved_oauth_token = custom_key if (custom_key and not str(custom_key).startswith("cal_live_")) else None
+            resolved_api_key = custom_key if (custom_key and str(custom_key).startswith("cal_live_")) else None
+            
+            if not custom_eid:
+                raise Exception("Missing Cal.com event type ID")
+                
+            if not resolved_api_key and not resolved_oauth_token:
+                raise Exception("Missing Cal.com credentials")
+                
+            # Detailed debug logging
+            logger.info(f"Resolved agent_id: {current_agent_id}")
+            logger.info(f"Resolved user_id: {current_user_id}")
+            logger.info(f"Resolved event_type_id: {custom_eid}")
+            logger.info("OAuth/API credentials loaded successfully")
 
             # 3. Book via Cal.com
             print(f"[POST_CALL] 📅 Sending booking request to Cal.com for {email_clean}...")
@@ -312,9 +389,10 @@ def process_call_results(call_id, retries=15, delay=30, agent_id=None, user_id=N
             
             resp = requests.post(CAL_BOOKING_URL, headers=headers, json=payload)
             if resp.status_code in [200, 201]:
-                print(f"[POST_CALL] ✅ SUCCESS! Booking confirmed for {email_clean}. Meeting URL: {resp.json().get('data', {}).get('meetingUrl')}")
-                if user_id:
-                    supabase_service.log_meeting(user_id, agent_id, call_id, status="booked", extracted_email=email_clean, meeting_topic=topic, is_interested=ai_data.get("interested", False))
+                meeting_url = resp.json().get('data', {}).get('meetingUrl') or ""
+                print(f"[POST_CALL] ✅ SUCCESS! Booking confirmed for {email_clean}. Meeting URL: {meeting_url}")
+                if current_user_id:
+                    supabase_service.log_meeting(current_user_id, current_agent_id, call_id, status="booked", extracted_email=email_clean, meeting_topic=topic, is_interested=ai_data.get("interested", False), error_reason=meeting_url)
                 return
             else:
                 error_msg = resp.text
@@ -323,14 +401,14 @@ def process_call_results(call_id, retries=15, delay=30, agent_id=None, user_id=N
                     error_msg = js.get("message") or js.get("error", {}).get("message") or resp.text
                 except: pass
                 print(f"[POST_CALL] ❌ Cal.com API Error ({resp.status_code}): {error_msg}")
-                if user_id:
-                    supabase_service.log_meeting(user_id, agent_id, call_id, status="failed", error_reason=f"Cal.com API Error: {error_msg}", extracted_email=email_clean, meeting_topic=topic, is_interested=ai_data.get("interested", False))
+                if current_user_id:
+                    supabase_service.log_meeting(current_user_id, current_agent_id, call_id, status="failed", error_reason=f"Cal.com API Error: {error_msg}", extracted_email=email_clean, meeting_topic=topic, is_interested=ai_data.get("interested", False))
                 return
 
         except Exception as e:
             print(f"[POST_CALL] 💥 Critical error during processing: {e}")
-            if user_id:
-                supabase_service.log_meeting(user_id, agent_id, call_id, status="failed", error_reason=f"Internal Server Error: {str(e)}")
+            if current_user_id:
+                supabase_service.log_meeting(current_user_id, current_agent_id, call_id, status="failed", error_reason=f"Internal Server Error: {str(e)}")
             return
             
     print(f"[POST_CALL] 🛑 Max retries reached for {call_id}. Tabbly did not provide JSON data in time.")

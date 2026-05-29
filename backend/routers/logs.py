@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException, Query, BackgroundTasks, Depends
+from fastapi.responses import StreamingResponse
 from services import tabbly, supabase_service
 from middleware.auth import get_user_id
 import os
@@ -145,3 +146,24 @@ def get_dashboard_stats(user_id: str = Depends(get_user_id)):
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/download-recording")
+def download_recording(url: str):
+    """Proxies recording files to avoid CORS issues when downloading in the frontend."""
+    if not url:
+        raise HTTPException(status_code=400, detail="Missing URL parameter")
+    try:
+        # Stream the recording from Tabbly
+        res = requests.get(url, stream=True)
+        res.raise_for_status()
+        
+        # Determine content type
+        content_type = res.headers.get("content-type", "audio/mpeg")
+        
+        def stream_response():
+            for chunk in res.iter_content(chunk_size=8192):
+                yield chunk
+                
+        return StreamingResponse(stream_response(), media_type=content_type)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to proxy recording: {str(e)}")
