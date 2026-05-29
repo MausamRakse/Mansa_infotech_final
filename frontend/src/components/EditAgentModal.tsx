@@ -92,6 +92,7 @@ const EditAgentModal = ({ agent, onClose }: Props) => {
     if (!formData.agent_name.trim()) newErrors.agent_name = true;
     if (!formData.custom_first_line.trim()) newErrors.custom_first_line = true;
     if (!formData.prompt_text.trim()) newErrors.prompt_text = true;
+    if (formData.voice_id === 0) newErrors.voice_id = true;
 
     // cal_api_key and cal_event_type_id are now strictly optional so no validation needed here
 
@@ -223,21 +224,34 @@ const EditAgentModal = ({ agent, onClose }: Props) => {
               <button
                 type="button"
                 onClick={() => setShowVoiceModal(true)}
-                className="w-full flex items-center justify-between border border-border rounded-[8px] px-3 py-2.5 text-[14px] bg-muted/30 text-surface-foreground hover:border-primary transition-all outline-none text-left cursor-pointer"
+                className={`w-full flex items-center justify-between border rounded-[8px] px-3 py-2.5 text-[14px] bg-muted/30 text-surface-foreground hover:border-primary transition-all outline-none text-left cursor-pointer ${
+                  errors.voice_id ? 'border-error' : 'border-border'
+                }`}
               >
                 <div className="flex items-center gap-2">
                   <Volume2 className="w-4 h-4 text-primary" />
                   <div>
-                    <span className="font-bold text-[13px]">
-                      {formData.voice_id === 1 ? 'Riya Mehta' : formData.voice_id === 2 ? 'Akash' : 'Asha'}
-                    </span>
-                    <span className="text-[11px] text-textMuted ml-2">
-                      ({formData.voice_id === 1 ? 'Female' : formData.voice_id === 2 ? 'Male' : 'Neutral'} • Indian Accent)
-                    </span>
+                    {formData.voice_id === 0 ? (
+                      <span className="font-bold text-[13px] text-textMuted italic">
+                        Select Your Voice
+                      </span>
+                    ) : (
+                      <>
+                        <span className="font-bold text-[13px]">
+                          {formData.voice_id === 1 ? 'Riya Mehta' : formData.voice_id === 2 ? 'Akash' : 'Asha'}
+                        </span>
+                        <span className="text-[11px] text-textMuted ml-2">
+                          ({formData.voice_id === 1 ? 'Female' : formData.voice_id === 2 ? 'Male' : 'Neutral'} • Indian Accent)
+                        </span>
+                      </>
+                    )}
                   </div>
                 </div>
-                <span className="text-[11px] font-bold text-primary bg-primary/10 py-0.5 px-2.5 rounded-full hover:bg-primary/20 transition-all">Change</span>
+                <span className="text-[11px] font-bold text-primary bg-primary/10 py-0.5 px-2.5 rounded-full hover:bg-primary/20 transition-all">
+                  {formData.voice_id === 0 ? 'Select' : 'Change'}
+                </span>
               </button>
+              {errors.voice_id && <span className="text-[12px] text-error">Please select an active voice profile</span>}
             </div>
           </div>
 
