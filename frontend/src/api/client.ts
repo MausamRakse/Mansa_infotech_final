@@ -124,6 +124,7 @@ export interface CallLog {
   transcript: string | null;
   json_output: string | null;
   agent_name: string;
+  customer_name?: string;
 }
 
 export interface MeetingLog {
