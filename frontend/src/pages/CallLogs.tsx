@@ -13,9 +13,9 @@ const CallLogs = () => {
   const [isAudioPlaying, setIsAudioPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
-  const [playbackRate, setPlaybackRate] = useState(1);
-  const [volume, setVolume] = useState(1);
-  const [isMuted, setIsMuted] = useState(false);
+  const playbackRate = 1;
+  const volume = 1;
+  const isMuted = false;
   const [isAudioLoading, setIsAudioLoading] = useState(false);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
