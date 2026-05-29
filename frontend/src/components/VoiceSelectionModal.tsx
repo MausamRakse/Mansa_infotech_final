@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { X, Play, Pause, Search, Check, Volume2, Mic, User, MapPin, Loader2 } from 'lucide-react';
+import { X, Play, Pause, Search, Mic, User, MapPin, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export interface Voice {

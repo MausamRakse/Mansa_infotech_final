@@ -1,13 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
 import { fetchCallLogs, type CallLog } from '../api/client';
 import TranscriptModal from '../components/TranscriptModal';
-import { Download, PlayCircle, PhoneOff, Loader2, Play, Pause, Volume2, VolumeX, X, RotateCcw, Gauge } from 'lucide-react';
+import { Download, PlayCircle, PhoneOff, Loader2, Play, Pause, X } from 'lucide-react';
 
 const CallLogs = () => {
   const [logs, setLogs] = useState<CallLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedLog, setSelectedLog] = useState<CallLog | null>(null);
-  const [downloadingRecording, setDownloadingRecording] = useState<string | null>(null);
 
   // Audio Player States
   const [activeAudioLog, setActiveAudioLog] = useState<CallLog | null>(null);
@@ -132,44 +131,6 @@ const CallLogs = () => {
     return filename;
   };
 
-  // Recording Dynamic Download handler
-  const downloadRecording = async (log: CallLog) => {
-    if (!log.recording_url) return;
-    const filename = generateCallFileName(log, "mp3");
-    
-    setDownloadingRecording(log.call_id);
-    try {
-      const devUrl = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
-      const apiOrigin = (typeof window !== 'undefined' && window.location.hostname !== 'localhost')
-        ? "/api"
-        : `${devUrl}/api`;
-      const proxyUrl = `${apiOrigin}/logs/download-recording?url=${encodeURIComponent(log.recording_url)}`;
-
-      const response = await fetch(proxyUrl);
-      if (!response.ok) throw new Error("Network response was not ok");
-      const blob = await response.blob();
-      const blobUrl = window.URL.createObjectURL(blob);
-      
-      const link = document.createElement("a");
-      link.href = blobUrl;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(blobUrl);
-    } catch (error) {
-      console.error("Failed proxy download, falling back to direct tab link", error);
-      // Fallback: direct link open in a new tab if CORS or other issues occur
-      const link = document.createElement("a");
-      link.href = log.recording_url;
-      link.target = "_blank";
-      link.rel = "noreferrer";
-      link.click();
-    } finally {
-      setDownloadingRecording(null);
-    }
-  };
-
   // Audio Playback Handlers
   const handlePlayRecording = (log: CallLog) => {
     if (!log.recording_url) return;
@@ -225,36 +186,7 @@ const CallLogs = () => {
     }
   };
 
-  const toggleMute = () => {
-    if (audioRef.current) {
-      const nextMuted = !isMuted;
-      audioRef.current.muted = nextMuted;
-      setIsMuted(nextMuted);
-    }
-  };
 
-  const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = parseFloat(e.target.value);
-    setVolume(val);
-    if (audioRef.current) {
-      audioRef.current.volume = val;
-      if (val > 0) {
-        audioRef.current.muted = false;
-        setIsMuted(false);
-      }
-    }
-  };
-
-  const togglePlaybackRate = () => {
-    const rates = [1, 1.25, 1.5, 2];
-    const currentIndex = rates.indexOf(playbackRate);
-    const nextIndex = (currentIndex + 1) % rates.length;
-    const nextRate = rates[nextIndex];
-    setPlaybackRate(nextRate);
-    if (audioRef.current) {
-      audioRef.current.playbackRate = nextRate;
-    }
-  };
 
   const formatAudioTime = (secs: number) => {
     if (isNaN(secs) || secs === Infinity) return "0:00";

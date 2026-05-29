@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { getMeetingLogs, type MeetingLog } from '../api/client';
 import { 
   CalendarCheck, CalendarRange, Clock, RefreshCcw, 
-  User, Mail, FileText, CheckCircle2, AlertCircle, 
+  User, FileText, CheckCircle2, AlertCircle, 
   ExternalLink, Code, Video, Copy, Download, X
 } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -367,7 +367,7 @@ const MeetingLogs = () => {
                   </thead>
                   <tbody className="divide-y divide-border/30">
                     {remainingLogs.map((log) => {
-                      const { dateStr, timeStr, participantName, participantEmail, topic } = parseMeetingDetails(log);
+                      const { participantName, participantEmail, topic } = parseMeetingDetails(log);
                       
                       return (
                         <tr key={log.id} className="hover:bg-primary/5 transition-colors group">
@@ -597,7 +597,12 @@ const MeetingLogs = () => {
                         className="p-1.5 rounded-lg text-textMuted hover:bg-surface border border-transparent hover:border-border/30 cursor-pointer disabled:opacity-40"
                         title="Copy Transcript"
                       >
-                        <Copy className="w-4 h-4" />
+                        <span className="sr-only">Copy</span>
+                        {copiedLogId ? (
+                          <CheckCircle2 className="w-4 h-4 text-success animate-in zoom-in-50 duration-150" />
+                        ) : (
+                          <Copy className="w-4 h-4" />
+                        )}
                       </button>
                       <button
                         onClick={() => handleDownloadTranscript(selectedLog)}
