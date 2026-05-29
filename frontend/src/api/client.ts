@@ -139,6 +139,11 @@ export interface MeetingLog {
   is_interested?: boolean;
   error_reason?: string;
   created_at: string;
+  phone_number?: string;
+  date?: string;
+  recording_url?: string | null;
+  transcript?: string | null;
+  json_output?: string | null;
 }
 
 export const getMeetingLogs = async (): Promise<MeetingLog[]> => {

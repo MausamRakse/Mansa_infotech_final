@@ -76,17 +76,45 @@ def trigger_call(req: TriggerCallRequest, background_tasks: BackgroundTasks, use
 
 @router.get("/meeting-logs")
 def get_meeting_logs_endpoint(user_id: str = Depends(get_user_id)):
-    """Fetches meeting logs and merges them with agent names."""
+    """Fetches meeting logs and merges them with agent names and call log metadata."""
     try:
         logs = supabase_service.get_meeting_logs(user_id)
         
-        # We need agent names. We'll fetch them from tabbly or agent_mappings but we don't store names in agent_mappings currently.
-        # Actually a quick way is to just fetch tabbly agents and build a map.
+        # Fetch tabbly agents to map names
         raw_agents = tabbly.get_agents()
         agent_names = {str(a.get("id")): a.get("agent_name", "Unknown Agent") for a in raw_agents}
         
+        # Fetch tabbly call logs for all of the user's agent IDs to build a mapping
+        user_agent_ids = supabase_service.get_user_agent_ids(user_id)
+        call_logs_map = {}
+        for agent_id in user_agent_ids:
+            try:
+                raw_logs = tabbly.fetch_call_logs(agent_id, limit=100)
+                for log in raw_logs:
+                    call_id = log.get("participant_identity")
+                    if call_id:
+                        call_logs_map[str(call_id)] = log
+            except Exception as e:
+                print(f"Error fetching tabbly logs for agent {agent_id}: {e}")
+        
         for log in logs:
             log["agent_name"] = agent_names.get(str(log.get("agent_id")), "Unknown Agent")
+            
+            # Enrich with Tabbly call log details
+            call_id = str(log.get("call_id"))
+            if call_id in call_logs_map:
+                t_log = call_logs_map[call_id]
+                log["phone_number"] = t_log.get("called_to", "")
+                log["date"] = t_log.get("called_time", "")
+                log["recording_url"] = t_log.get("call_recording_url")
+                log["transcript"] = t_log.get("call_transcript")
+                log["json_output"] = t_log.get("call_json_output")
+            else:
+                log["phone_number"] = ""
+                log["date"] = log.get("created_at")
+                log["recording_url"] = None
+                log["transcript"] = None
+                log["json_output"] = None
             
         return {"success": True, "logs": logs}
     except Exception as e:

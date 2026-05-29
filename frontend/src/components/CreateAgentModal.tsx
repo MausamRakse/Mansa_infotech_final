@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { X, Loader2, Calendar, Link2 } from 'lucide-react';
+import { X, Loader2, Calendar, Link2, Volume2 } from 'lucide-react';
 import { createAgent, getUser, getCalAuthUrl, disconnectCalApi } from '../api/client';
 import { useAgentStore } from '../store/agentStore';
 import toast from 'react-hot-toast';
+import VoiceSelectionModal from './VoiceSelectionModal';
 
 interface Props {
   onClose: () => void;
@@ -29,6 +30,7 @@ const CreateAgentModal = ({ onClose }: Props) => {
   const [errors, setErrors] = useState<Record<string, boolean>>({});
   const [calConnected, setCalConnected] = useState(false);
   const [checkingCal, setCheckingCal] = useState(true);
+  const [showVoiceModal, setShowVoiceModal] = useState(false);
 
   useEffect(() => {
     checkCalConnection();
@@ -174,15 +176,24 @@ const CreateAgentModal = ({ onClose }: Props) => {
             </div>
             <div className="flex flex-col gap-1.5">
               <label className="text-[13px] font-semibold text-surface-foreground">Voice Options</label>
-              <select
-                value={formData.voice_id}
-                onChange={e => setFormData({ ...formData, voice_id: parseInt(e.target.value) })}
-                className="border border-border rounded-[8px] px-3 py-2 text-[14px] bg-muted/30 text-surface-foreground outline-none focus:border-primary"
+              <button
+                type="button"
+                onClick={() => setShowVoiceModal(true)}
+                className="w-full flex items-center justify-between border border-border rounded-[8px] px-3 py-2.5 text-[14px] bg-muted/30 text-surface-foreground hover:border-primary transition-all outline-none text-left cursor-pointer"
               >
-                <option value={1}>Voice 1 (Female)</option>
-                <option value={2}>Voice 2 (Male)</option>
-                <option value={3}>Voice 3 (Neutral)</option>
-              </select>
+                <div className="flex items-center gap-2">
+                  <Volume2 className="w-4 h-4 text-primary" />
+                  <div>
+                    <span className="font-bold text-[13px]">
+                      {formData.voice_id === 1 ? 'Riya Mehta' : formData.voice_id === 2 ? 'Akash' : 'Asha'}
+                    </span>
+                    <span className="text-[11px] text-textMuted ml-2">
+                      ({formData.voice_id === 1 ? 'Female' : formData.voice_id === 2 ? 'Male' : 'Neutral'} • Indian Accent)
+                    </span>
+                  </div>
+                </div>
+                <span className="text-[11px] font-bold text-primary bg-primary/10 py-0.5 px-2.5 rounded-full hover:bg-primary/20 transition-all">Change</span>
+              </button>
             </div>
           </div>
 
@@ -281,6 +292,16 @@ const CreateAgentModal = ({ onClose }: Props) => {
           </div>
         </form>
       </div>
+      {showVoiceModal && (
+        <VoiceSelectionModal
+          selectedVoiceId={formData.voice_id}
+          onSelect={(voiceId) => {
+            setFormData({ ...formData, voice_id: voiceId });
+            setShowVoiceModal(false);
+          }}
+          onClose={() => setShowVoiceModal(false)}
+        />
+      )}
     </div>
   );
 };

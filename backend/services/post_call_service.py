@@ -389,9 +389,10 @@ def process_call_results(call_id, retries=15, delay=30, agent_id=None, user_id=N
             
             resp = requests.post(CAL_BOOKING_URL, headers=headers, json=payload)
             if resp.status_code in [200, 201]:
-                print(f"[POST_CALL] ✅ SUCCESS! Booking confirmed for {email_clean}. Meeting URL: {resp.json().get('data', {}).get('meetingUrl')}")
+                meeting_url = resp.json().get('data', {}).get('meetingUrl') or ""
+                print(f"[POST_CALL] ✅ SUCCESS! Booking confirmed for {email_clean}. Meeting URL: {meeting_url}")
                 if current_user_id:
-                    supabase_service.log_meeting(current_user_id, current_agent_id, call_id, status="booked", extracted_email=email_clean, meeting_topic=topic, is_interested=ai_data.get("interested", False))
+                    supabase_service.log_meeting(current_user_id, current_agent_id, call_id, status="booked", extracted_email=email_clean, meeting_topic=topic, is_interested=ai_data.get("interested", False), error_reason=meeting_url)
                 return
             else:
                 error_msg = resp.text
