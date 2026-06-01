@@ -5,6 +5,7 @@ import AgentCard from '../components/AgentCard';
 import CreateAgentModal from '../components/CreateAgentModal';
 import EditAgentModal from '../components/EditAgentModal';
 import TriggerCallModal from '../components/TriggerCallModal';
+import ConnectCalModal from '../components/ConnectCalModal';
 import { Plus, Sparkles, ArrowRight } from 'lucide-react';
 
 const Agents = () => {
@@ -12,6 +13,7 @@ const Agents = () => {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [selectedAgentForEdit, setSelectedAgentForEdit] = useState<Agent | null>(null);
   const [selectedAgentForCall, setSelectedAgentForCall] = useState<Agent | null>(null);
+  const [pendingCalConnectionAgent, setPendingCalConnectionAgent] = useState<Agent | null>(null);
 
   useEffect(() => {
     fetchAgents();
@@ -82,7 +84,20 @@ const Agents = () => {
       </div>
 
       {isCreateOpen && (
-        <CreateAgentModal onClose={() => setIsCreateOpen(false)} />
+        <CreateAgentModal onClose={(createdAgent) => {
+          setIsCreateOpen(false);
+          if (createdAgent?.meeting_enabled) {
+            setPendingCalConnectionAgent(createdAgent);
+          }
+        }} />
+      )}
+
+      {pendingCalConnectionAgent && (
+        <ConnectCalModal
+          agent={pendingCalConnectionAgent}
+          onClose={() => setPendingCalConnectionAgent(null)}
+          onSuccess={() => fetchAgents()}
+        />
       )}
 
       {selectedAgentForEdit && (

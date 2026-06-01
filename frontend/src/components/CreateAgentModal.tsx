@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { X, Loader2, Calendar, Link2, Volume2 } from 'lucide-react';
-import { createAgent, getUser, getCalAuthUrl, disconnectCalApi } from '../api/client';
+import { createAgent, getCalAuthUrl } from '../api/client';
+
 import { useAgentStore } from '../store/agentStore';
 import toast from 'react-hot-toast';
 import VoiceSelectionModal from './VoiceSelectionModal';
 
 interface Props {
-  onClose: () => void;
+  onClose: (createdAgent?: Agent) => void;
 }
 
 const AVAILABLE_PHONE_NUMBERS = [
@@ -28,58 +29,7 @@ const CreateAgentModal = ({ onClose }: Props) => {
     phone_number: '+918035736739',
   });
   const [errors, setErrors] = useState<Record<string, boolean>>({});
-  const [calConnected, setCalConnected] = useState(false);
-  const [checkingCal, setCheckingCal] = useState(true);
   const [showVoiceModal, setShowVoiceModal] = useState(false);
-
-  useEffect(() => {
-    checkCalConnection();
-
-    const handleOAuthMessage = (event: MessageEvent) => {
-      if (event.data?.type === 'CAL_AUTH_SUCCESS') {
-        setCalConnected(true);
-        toast.success('Cal.com connected successfully!');
-      }
-    };
-    window.addEventListener('message', handleOAuthMessage);
-    return () => window.removeEventListener('message', handleOAuthMessage);
-  }, []);
-
-  const checkCalConnection = async () => {
-    try {
-      const user = await getUser();
-      setCalConnected(!!user.cal_connected);
-    } catch (e) {
-      console.error('Failed to check calendar connection:', e);
-    } finally {
-      setCheckingCal(false);
-    }
-  };
-
-  const handleConnectCal = async () => {
-    try {
-      const res = await getCalAuthUrl();
-      if (res.url) {
-        const width = 600, height = 700;
-        const left = window.screen.width / 2 - width / 2;
-        const top = window.screen.height / 2 - height / 2;
-        window.open(res.url, 'cal_auth', `width=${width},height=${height},left=${left},top=${top}`);
-      }
-    } catch (e: any) {
-      toast.error(e.response?.data?.detail || 'Failed to initialize Cal.com connection');
-    }
-  };
-
-  const handleDisconnectCal = async () => {
-    if (!confirm('Are you sure you want to disconnect your Cal.com account? This will disable booking on new and existing agents.')) return;
-    try {
-      await disconnectCalApi();
-      setCalConnected(false);
-      toast.success('Cal.com disconnected');
-    } catch (e) {
-      toast.error('Failed to disconnect Cal.com');
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -101,7 +51,7 @@ const CreateAgentModal = ({ onClose }: Props) => {
       const res = await createAgent(formData);
       addAgent(res.agent);
       toast.success('Agent created successfully!');
-      onClose();
+      onClose(res.agent);
     } catch (error: any) {
       const errDetail = error.response?.data?.detail || 'Failed to create agent';
       toast.error(errDetail);
@@ -224,77 +174,23 @@ const CreateAgentModal = ({ onClose }: Props) => {
             </select>
           </div>
 
-          <div className="flex flex-col gap-4 py-3 border-t border-border mt-2">
-            <div className="flex items-center justify-between text-[14px]">
-              <div className="flex flex-col">
-                <span className="font-semibold text-surface-foreground">Meeting Booking</span>
-                <span className="text-[12px] text-textMuted">Allow agent to access Cal.com slots</span>
+          <div className="pt-2">
+            <label className="flex items-center justify-between cursor-pointer p-4 rounded-xl border border-border/50 bg-muted/10 hover:bg-muted/20 transition-colors">
+              <div className="flex flex-col gap-1">
+                <span className="text-[14px] font-bold text-surface-foreground">Enable Meeting Booking</span>
+                <span className="text-[12px] text-textMuted">Allow this agent to fetch real-time slots and book appointments during calls.</span>
               </div>
-              <button
-                type="button"
-                role="switch"
-                onClick={() => setFormData({ ...formData, enable_calendar_booking: !formData.enable_calendar_booking })}
-                className={`relative inline-flex h-[24px] w-[44px] shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${formData.enable_calendar_booking ? 'bg-primary' : 'bg-border'}`}
-              >
-                <span className={`pointer-events-none inline-block h-[20px] w-[20px] transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${formData.enable_calendar_booking ? 'translate-x-[20px]' : 'translate-x-0'}`} />
-              </button>
-            </div>
-
-            {formData.enable_calendar_booking && (
-              <div className="animate-in slide-in-from-top-2 duration-200 flex flex-col gap-4">
-                {checkingCal ? (
-                  <div className="flex items-center justify-center gap-2 py-4 text-textMuted bg-muted/20 border border-border rounded-xl">
-                    <Loader2 className="w-4 h-4 animate-spin text-primary" />
-                    <span className="text-[13px] font-medium">Checking Cal.com integration...</span>
-                  </div>
-                ) : !calConnected ? (
-                  <div className="bg-muted/10 border border-border rounded-[12px] p-5 flex flex-col gap-4">
-                    <p className="text-[13px] text-textMuted leading-relaxed">
-                      Connect your personal Cal.com account to allow this agent to fetch real-time slots and book appointments during outbound calls.
-                    </p>
-                    <button
-                      type="button"
-                      onClick={handleConnectCal}
-                      className="w-full py-3 bg-primary hover:bg-primary-hover text-primary-foreground font-bold rounded-xl flex items-center justify-center gap-2.5 shadow-lg shadow-primary/10 transition-all hover:scale-[1.01] active:scale-[0.99] text-[14px]"
-                    >
-                      <Calendar className="w-4.5 h-4.5" />
-                      Connect Cal.com Account
-                    </button>
-                  </div>
-                ) : (
-                  <div className="flex flex-col gap-4">
-                    <div className="bg-success/5 border border-success/20 rounded-[12px] p-4 flex items-center justify-between">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-2.5 h-2.5 rounded-full bg-success animate-pulse" />
-                        <span className="text-[13px] font-bold text-success">Cal.com Account Connected</span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={handleDisconnectCal}
-                        className="text-[12px] font-bold text-error hover:underline px-2.5 py-1.5 hover:bg-error/5 rounded-md transition-all"
-                      >
-                        Disconnect Account
-                      </button>
-                    </div>
-
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-[12px] font-bold text-surface-foreground uppercase tracking-tight flex items-center gap-1.5">
-                        <Link2 className="w-3.5 h-3.5 text-primary" />
-                        Cal.com Event Type ID (Optional)
-                      </label>
-                      <input
-                        type="text"
-                        value={formData.cal_event_type_id}
-                        onChange={e => setFormData({ ...formData, cal_event_type_id: e.target.value })}
-                        className={`border rounded-[8px] px-3 py-2 text-[13px] bg-muted/20 text-surface-foreground outline-none focus:border-primary transition-all border-border`}
-                        placeholder="Leave blank to dynamically auto-resolve first active event type"
-                      />
-                      <span className="text-[11px] text-textMuted">Specify a specific Event Type ID if you want to route this agent's calls to a distinct calendar event.</span>
-                    </div>
-                  </div>
-                )}
+              <div className="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
+                <input
+                  type="checkbox"
+                  checked={formData.enable_calendar_booking}
+                  onChange={e => setFormData({ ...formData, enable_calendar_booking: e.target.checked })}
+                  className="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 border-muted appearance-none cursor-pointer transition-transform duration-200 ease-in-out z-10"
+                  style={{ transform: formData.enable_calendar_booking ? 'translateX(100%)' : 'translateX(0)', borderColor: formData.enable_calendar_booking ? '#10b981' : '#374151' }}
+                />
+                <label className={`toggle-label block overflow-hidden h-5 rounded-full cursor-pointer transition-colors duration-200 ease-in-out ${formData.enable_calendar_booking ? 'bg-success' : 'bg-muted'}`}></label>
               </div>
-            )}
+            </label>
           </div>
 
           <div className="pt-2 flex justify-end gap-3 border-t border-border mt-4">

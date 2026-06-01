@@ -67,6 +67,9 @@ export const getCalAuthUrl = (agentId?: string) =>
 export const disconnectCalApi = () =>
   api.post("users/me/disconnect-cal").then(r => r.data);
 
+export const disconnectAgentCalApi = (agent_id: string) =>
+  api.post("agents/disconnect-agent-cal", { agent_id }).then(r => r.data);
+
 export interface CreateAgentPayload {
   agent_name: string;
   custom_first_line: string;
@@ -111,6 +114,7 @@ export interface Agent {
   meeting_enabled: boolean;
   cal_api_key?: string;
   cal_event_type_id?: string;
+  cal_connected?: boolean;
   category?: "customer_care" | "growth" | "custom";
   phone_number?: string;
 }

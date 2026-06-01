@@ -10,7 +10,7 @@ load_dotenv(dotenv_path=env_path, override=True)
 
 def get_valid_cal_token_for_user(user_id: str) -> str:
     """
-    Checks if the user has a Cal.com OAuth token in Supabase.
+    Checks if the user has a Cal.com OAuth token in Supabase (profiles table).
     If so, verifies if it is expired. If expired, refreshes it using the refresh token,
     saves the new tokens to the database, and returns the valid access token.
     Otherwise, returns None (so we fallback to CAL_API_KEY).
@@ -33,10 +33,8 @@ def get_valid_cal_token_for_user(user_id: str) -> str:
         is_expired = False
         if expiry_str:
             try:
-                # Truncate Z or timezone info to parse simply
                 clean_expiry = expiry_str.split("+")[0].split(".")[0].replace("Z", "")
                 expiry_dt = datetime.strptime(clean_expiry, "%Y-%m-%dT%H:%M:%S")
-                # Expiry buffer of 5 minutes
                 if datetime.utcnow() >= expiry_dt - timedelta(minutes=5):
                     is_expired = True
             except Exception as e:
@@ -47,7 +45,6 @@ def get_valid_cal_token_for_user(user_id: str) -> str:
             
         if is_expired and refresh_token:
             print(f"[CAL_AUTH] 🔄 Access token expired. Refreshing token for user {user_id}...")
-            # Refresh token
             CAL_CLIENT_ID = os.getenv("CAL_CLIENT_ID")
             CAL_CLIENT_SECRET = os.getenv("CAL_CLIENT_SECRET")
             
@@ -68,10 +65,8 @@ def get_valid_cal_token_for_user(user_id: str) -> str:
                 new_access = data.get("access_token")
                 new_refresh = data.get("refresh_token") or refresh_token
                 expires_in = data.get("expires_in", 3600)
-                
                 new_expiry = datetime.utcnow() + timedelta(seconds=expires_in)
                 
-                # Update DB
                 supabase.table("profiles").update({
                     "cal_access_token": new_access,
                     "cal_refresh_token": new_refresh,
@@ -88,12 +83,92 @@ def get_valid_cal_token_for_user(user_id: str) -> str:
         print(f"[CAL_AUTH] Error checking/refreshing Cal.com token: {e}")
         return None
 
-def get_default_event_type_id(key: str) -> int:
+
+def get_valid_cal_token_for_agent(agent_id: str) -> str:
+    """
+    Checks if a specific agent has its own Cal.com OAuth token in agent_mappings.
+    If expired, refreshes and saves the new tokens back to agent_mappings.
+    Returns the valid access_token string, or None if no agent-specific token exists.
+    This is the PREFERRED method — it enforces per-agent calendar isolation.
+    """
+    try:
+        from middleware.auth import supabase
+        resp = supabase.table("agent_mappings").select("*").eq("agent_id", str(agent_id)).execute()
+        if not resp.data:
+            return None
+
+        mapping = resp.data[0]
+        access_token = mapping.get("cal_access_token")
+        refresh_token = mapping.get("cal_refresh_token")
+        expiry_str = mapping.get("cal_token_expiry")
+
+        if not access_token:
+            return None
+
+        # Check if expired
+        is_expired = False
+        if expiry_str:
+            try:
+                clean_expiry = expiry_str.split("+")[0].split(".")[0].replace("Z", "")
+                expiry_dt = datetime.strptime(clean_expiry, "%Y-%m-%dT%H:%M:%S")
+                if datetime.utcnow() >= expiry_dt - timedelta(minutes=5):
+                    is_expired = True
+            except Exception as e:
+                print(f"[CAL_AUTH_AGENT] Error parsing token expiry: {e}")
+                is_expired = True
+        else:
+            is_expired = True
+
+        if is_expired and refresh_token:
+            print(f"[CAL_AUTH_AGENT] 🔄 Access token expired. Refreshing for agent {agent_id}...")
+            CAL_CLIENT_ID = os.getenv("CAL_CLIENT_ID")
+            CAL_CLIENT_SECRET = os.getenv("CAL_CLIENT_SECRET")
+
+            if not CAL_CLIENT_ID or not CAL_CLIENT_SECRET:
+                print("[CAL_AUTH_AGENT] ⚠️ Missing client credentials, cannot refresh.")
+                return access_token
+
+            payload = {
+                "client_id": CAL_CLIENT_ID,
+                "client_secret": CAL_CLIENT_SECRET,
+                "refresh_token": refresh_token,
+                "grant_type": "refresh_token"
+            }
+            r = requests.post("https://api.cal.com/v2/auth/oauth2/token", json=payload, headers={"Content-Type": "application/json"})
+            if r.status_code == 200:
+                data = r.json()
+                new_access = data.get("access_token")
+                new_refresh = data.get("refresh_token") or refresh_token
+                expires_in = data.get("expires_in", 3600)
+                new_expiry = datetime.utcnow() + timedelta(seconds=expires_in)
+
+                supabase.table("agent_mappings").update({
+                    "cal_access_token": new_access,
+                    "cal_refresh_token": new_refresh,
+                    "cal_token_expiry": new_expiry.isoformat()
+                }).eq("agent_id", str(agent_id)).execute()
+
+                print(f"[CAL_AUTH_AGENT] ✅ Token refreshed for agent {agent_id}!")
+                return new_access
+            else:
+                print(f"[CAL_AUTH_AGENT] ❌ Token refresh failed: {r.text}")
+
+        return access_token
+    except Exception as e:
+        print(f"[CAL_AUTH_AGENT] Error checking/refreshing agent Cal.com token: {e}")
+        return None
+
+
+def get_default_event_type_id(key: str, preferred_eid: any = None) -> int:
     """
     Fetches the first active/public event type ID from Cal.com
     using the provided OAuth access token or legacy API key.
     Refactored strictly for Cal.com v2 Event Type payload.
     Uses version 2024-06-14 to prevent 404 errors and parse flat list.
+
+    If preferred_eid is provided, it validates it against the active list.
+    If it is in the list, it returns preferred_eid. Otherwise, it falls back
+    to the first active event type.
     """
     if not key:
         return None
@@ -120,13 +195,30 @@ def get_default_event_type_id(key: str) -> int:
             if data.get("status") == "success":
                 event_list = data.get("data", [])
                 if isinstance(event_list, list) and len(event_list) > 0:
+                    active_ids = []
                     for et in event_list:
                         if et.get("active") is not False:
-                            print(f"[CAL] ⚡ Dynamically resolved active eventTypeId {et.get('id')} from Cal.com v2 API")
-                            return int(et.get("id"))
-                    first_id = event_list[0].get("id")
-                    print(f"[CAL] ⚡ Dynamically resolved first eventTypeId {first_id} from Cal.com v2 API")
-                    return int(first_id)
+                            active_ids.append(int(et.get("id")))
+                    
+                    if not active_ids:
+                        active_ids = [int(et.get("id")) for et in event_list]
+                        
+                    # Validate preferred_eid against the active list
+                    if preferred_eid:
+                        try:
+                            pref_id = int(preferred_eid)
+                            if pref_id in active_ids:
+                                print(f"[CAL] ✅ Preferred eventTypeId {pref_id} is active and verified.")
+                                return pref_id
+                            else:
+                                print(f"[CAL] ⚠️ Preferred eventTypeId {pref_id} is not in the active event types list: {active_ids}. Falling back.")
+                        except ValueError:
+                            print(f"[CAL] ⚠️ Preferred eventTypeId {preferred_eid} is not a valid integer. Falling back.")
+                    
+                    if active_ids:
+                        resolved_id = active_ids[0]
+                        print(f"[CAL] ⚡ Dynamically resolved active eventTypeId {resolved_id} from Cal.com v2 API")
+                        return resolved_id
             print("[CAL] ⚠️ Warning: No event types found in data list.")
         else:
             print(f"[CAL] ⚠️ Error: Cal.com API returned non-200 status {r.status_code}.")
@@ -134,6 +226,11 @@ def get_default_event_type_id(key: str) -> int:
     except Exception as e:
         print(f"[CAL] ⚠️ Warning: Failed to dynamically retrieve Cal.com eventTypeId: {e}")
         
+    if preferred_eid:
+        try:
+            return int(preferred_eid)
+        except ValueError:
+            return None
     return None
 
 def utc_to_ist(utc_str):
@@ -160,19 +257,34 @@ def build_availability_instruction(api_key=None, event_type_id=None, user_id=Non
     Filters out slots that have already passed for today.
     Supports OAuth access tokens or legacy API Keys.
     Returns a formatted string to inject into the agent's custom_instruction.
+
+    TOKEN RESOLUTION ORDER (strict isolation):
+    1. Agent-specific OAuth token from agent_mappings (preferred — per-agent isolation)
+    2. Agent-specific API key from agent_mappings
+    3. Global user profile OAuth token (fallback only if agent has no own tokens)
+    4. Provided api_key argument
     """
     oauth_token = None
-    if user_id:
+
+    # 1. Check agent-specific OAuth token first (strict isolation)
+    if agent_id:
+        oauth_token = get_valid_cal_token_for_agent(agent_id)
+        if oauth_token:
+            print(f"[CAL] 🔐 Using AGENT-SPECIFIC OAuth token for agent {agent_id}")
+
+    # 2. Fallback to global user profile token only if no agent-specific token
+    if not oauth_token and user_id:
         oauth_token = get_valid_cal_token_for_user(user_id)
-        
+        if oauth_token:
+            print(f"[CAL] ⚠️ Falling back to USER-LEVEL OAuth token for user {user_id}")
+
     key = oauth_token or api_key
     if not key:
         print("[CAL] ⚠️ No connected Cal.com calendar credentials (OAuth/Agent key) found. Disabling slot retrieval.")
         return "STRICT INSTRUCTION: Meeting booking is currently disabled. Do NOT suggest any dates or times to the user. Inform them that booking is unavailable if they ask."
 
-    eid = event_type_id
-    if not eid:
-        eid = get_default_event_type_id(key)
+    # Always validate/resolve the event_type_id to make sure it exists/is active
+    eid = get_default_event_type_id(key, preferred_eid=event_type_id)
 
     if not eid:
         print("[CAL] ⚠️ No active Cal.com eventTypeId found. Disabling slot retrieval.")
