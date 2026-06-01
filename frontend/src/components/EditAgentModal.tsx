@@ -279,7 +279,7 @@ const EditAgentModal = ({ agent, onClose }: Props) => {
                 <button
                   type="button"
                   role="switch"
-                  checked={formData.enable_calendar_booking}
+                  aria-checked={formData.enable_calendar_booking}
                   className={`relative inline-flex h-[24px] w-[44px] shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${formData.enable_calendar_booking ? 'bg-primary' : 'bg-border'}`}
                 >
                   <span className={`pointer-events-none inline-block h-[20px] w-[20px] transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${formData.enable_calendar_booking ? 'translate-x-[20px]' : 'translate-x-0'}`} />
