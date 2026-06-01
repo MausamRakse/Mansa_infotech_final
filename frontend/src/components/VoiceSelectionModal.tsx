@@ -21,7 +21,7 @@ export const AVAILABLE_VOICES: Voice[] = [
     gender: 'Female',
     language: 'Hindi, English, Kannada, +7',
     accent: 'Indian',
-    audioUrl: '/Asha.mp3',
+    audioUrl: '/voice/Asha.mp3',
     description: 'A conversational, balanced, and direct voice ideal for survey intake and calendar bookings.'
   },
   {
@@ -31,7 +31,7 @@ export const AVAILABLE_VOICES: Voice[] = [
     gender: 'Female',
     language: 'Hindi, English, Kannada, +7',
     accent: 'Indian',
-    audioUrl: '/Riya_Mehta.mp3',
+    audioUrl: '/voice/Riya_Mehta.mp3',
     description: 'A crisp, professional, and welcoming voice suitable for enterprise sales and customer support.'
   },
   {
@@ -41,7 +41,7 @@ export const AVAILABLE_VOICES: Voice[] = [
     gender: 'Male',
     language: 'Hindi, English',
     accent: 'Indian',
-    audioUrl: '/Akash.mp3',
+    audioUrl: '/voice/Akash.mp3',
     description: 'A polite, friendly, and engaging male voice perfect for customer retention and feedback sessions.'
   }
 ];
