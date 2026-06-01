@@ -267,19 +267,24 @@ const EditAgentModal = ({ agent, onClose }: Props) => {
           </div>
 
           <div className="flex flex-col gap-4 py-3 border-t border-border mt-2">
-            <div className="flex items-center justify-between text-[14px]">
+            <div 
+              onClick={() => setFormData({ ...formData, enable_calendar_booking: !formData.enable_calendar_booking })}
+              className="flex items-center justify-between cursor-pointer p-4 rounded-xl border border-border/50 bg-muted/10 hover:bg-muted/20 transition-all active:scale-[0.99] select-none text-[14px]"
+            >
               <div className="flex flex-col">
-                <span className="font-semibold text-surface-foreground">Meeting Booking</span>
-                <span className="text-[12px] text-textMuted">Allow agent to access Cal.com slots</span>
+                <span className="font-bold text-surface-foreground">Meeting Booking</span>
+                <span className="text-[12px] text-textMuted mt-0.5">Allow agent to access Cal.com slots and book appointments.</span>
               </div>
-              <button
-                type="button"
-                role="switch"
-                onClick={() => setFormData({ ...formData, enable_calendar_booking: !formData.enable_calendar_booking })}
-                className={`relative inline-flex h-[24px] w-[44px] shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${formData.enable_calendar_booking ? 'bg-primary' : 'bg-border'}`}
-              >
-                <span className={`pointer-events-none inline-block h-[20px] w-[20px] transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${formData.enable_calendar_booking ? 'translate-x-[20px]' : 'translate-x-0'}`} />
-              </button>
+              <div className="pointer-events-none">
+                <button
+                  type="button"
+                  role="switch"
+                  checked={formData.enable_calendar_booking}
+                  className={`relative inline-flex h-[24px] w-[44px] shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${formData.enable_calendar_booking ? 'bg-primary' : 'bg-border'}`}
+                >
+                  <span className={`pointer-events-none inline-block h-[20px] w-[20px] transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${formData.enable_calendar_booking ? 'translate-x-[20px]' : 'translate-x-0'}`} />
+                </button>
+              </div>
             </div>
 
             {formData.enable_calendar_booking && (

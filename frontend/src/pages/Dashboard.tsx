@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
 import { fetchCallLogs, fetchStats, getMeetingLogs, type CallLog, type MeetingLog } from '../api/client';
 import { useAgentStore } from '../store/agentStore';
-import { PhoneCall, Bot, CheckCircle2, ArrowRight, BarChart3, TrendingUp, Calendar, CalendarCheck } from 'lucide-react';
+import { PhoneCall, Bot, CheckCircle2, ArrowRight, BarChart3, TrendingUp, Calendar, CalendarCheck, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const Dashboard = () => {
   const { fetchAgents } = useAgentStore();
@@ -10,6 +10,9 @@ const Dashboard = () => {
   const [meetingLogs, setMeetingLogs] = useState<MeetingLog[]>([]);
   const [statsData, setStatsData] = useState({ total_calls: 0, total_completed: 0, active_agents: 0 });
   const [loading, setLoading] = useState(true);
+  
+  const [currentMeetingPage, setCurrentMeetingPage] = useState(1);
+  const meetingsPerPage = 10;
 
   useEffect(() => {
     const loadDashboard = async () => {
@@ -22,6 +25,7 @@ const Dashboard = () => {
         setLogs(logsData);
         setStatsData(aggregatedStats);
         setMeetingLogs(mLogs);
+        setCurrentMeetingPage(1);
       } catch (err) {
         console.error(err);
       } finally {
@@ -57,6 +61,10 @@ const Dashboard = () => {
       trend: `${statsData.total_calls > 0 ? Math.round((statsData.total_completed / statsData.total_calls) * 100) : 0}% success rate`
     },
   ];
+
+  const totalPages = Math.ceil(meetingLogs.length / meetingsPerPage);
+  const startIndex = (currentMeetingPage - 1) * meetingsPerPage;
+  const paginatedMeetings = meetingLogs.slice(startIndex, startIndex + meetingsPerPage);
 
   return (
     <div className="max-w-6xl mx-auto flex flex-col gap-8 h-full animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -249,7 +257,7 @@ const Dashboard = () => {
                     </td>
                   </tr>
                 ) : (
-                  meetingLogs.map((mlog, i) => (
+                  paginatedMeetings.map((mlog, i) => (
                     <tr key={mlog.id || i} className="hover:bg-primary/5 transition-colors">
                       <td className="px-6 py-4 font-semibold text-surface-foreground whitespace-nowrap">
                         {mlog.agent_name || 'Unknown'}
@@ -285,6 +293,63 @@ const Dashboard = () => {
               </tbody>
             </table>
           </div>
+
+          {/* Premium Pagination Controls */}
+          {meetingLogs.length > meetingsPerPage && (
+            <div className="px-8 py-5 border-t border-border/40 flex flex-col items-center justify-center gap-3 bg-muted/5">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setCurrentMeetingPage(prev => Math.max(prev - 1, 1))}
+                  disabled={currentMeetingPage === 1}
+                  className="p-2 text-[13px] font-bold rounded-xl border border-border/60 text-textMuted hover:text-surface-foreground hover:bg-muted/10 transition-all disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-textMuted disabled:cursor-not-allowed active:scale-95 flex items-center justify-center"
+                  aria-label="Previous Page"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                
+                {/* Dynamic Page Numbers */}
+                <div className="flex items-center gap-1.5">
+                  {Array.from({ length: totalPages }).map((_, idx) => {
+                    const pageNum = idx + 1;
+                    const isActive = currentMeetingPage === pageNum;
+                    return (
+                      <button
+                        key={pageNum}
+                        type="button"
+                        onClick={() => setCurrentMeetingPage(pageNum)}
+                        className={`w-9 h-9 rounded-xl text-[13px] font-bold transition-all active:scale-95 flex items-center justify-center ${
+                          isActive
+                            ? 'bg-primary text-primary-foreground shadow-md shadow-primary/20 scale-[1.05]'
+                            : 'border border-border/40 text-textMuted hover:text-surface-foreground hover:bg-muted/10'
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setCurrentMeetingPage(prev => Math.min(prev + 1, totalPages))}
+                  disabled={currentMeetingPage === totalPages}
+                  className="p-2 text-[13px] font-bold rounded-xl border border-border/60 text-textMuted hover:text-surface-foreground hover:bg-muted/10 transition-all disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-textMuted disabled:cursor-not-allowed active:scale-95 flex items-center justify-center"
+                  aria-label="Next Page"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+
+              <span className="text-[12px] text-textMuted font-medium text-center mt-1">
+                Showing <span className="font-semibold text-surface-foreground">{startIndex + 1}</span> to{' '}
+                <span className="font-semibold text-surface-foreground">
+                  {Math.min(startIndex + meetingsPerPage, meetingLogs.length)}
+                </span>{' '}
+                of <span className="font-semibold text-surface-foreground">{meetingLogs.length}</span> meetings
+              </span>
+            </div>
+          )}
         </div>
       </div>
     </div>
