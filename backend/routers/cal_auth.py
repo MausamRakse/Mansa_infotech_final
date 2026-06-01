@@ -83,7 +83,7 @@ def get_auth_url(agent_id: str = None, user_id: str = Depends(get_user_id)):
     env_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env')
     load_dotenv(dotenv_path=env_path, override=True)
     client_id = os.getenv("CAL_CLIENT_ID")
-    redirect_uri = os.getenv("CAL_REDIRECT_URI", "http://localhost:8000/api/auth/cal/callback")
+    redirect_uri = os.getenv("CAL_REDIRECT_URI", "https://convexa-ai-kui5.onrender.com/api/auth/cal/callback").strip()
     
     if not client_id:
         raise HTTPException(status_code=500, detail="CAL_CLIENT_ID is not configured in backend .env")
@@ -111,7 +111,7 @@ def oauth_callback(code: str = Query(...), state: str = Query(...)):
     load_dotenv(dotenv_path=env_path, override=True)
     client_id = os.getenv("CAL_CLIENT_ID")
     client_secret = os.getenv("CAL_CLIENT_SECRET")
-    redirect_uri = os.getenv("CAL_REDIRECT_URI", "http://localhost:8000/api/auth/cal/callback")
+    redirect_uri = os.getenv("CAL_REDIRECT_URI", "https://convexa-ai-kui5.onrender.com/api/auth/cal/callback").strip()
     
     if not client_id or not client_secret:
         return error_html("Cal.com client credentials are not configured in the backend environment.")
