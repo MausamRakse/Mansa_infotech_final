@@ -88,7 +88,10 @@ const Agents = () => {
       {selectedAgentForEdit && (
         <EditAgentModal
           agent={selectedAgentForEdit}
-          onClose={() => setSelectedAgentForEdit(null)}
+          onClose={() => {
+            setSelectedAgentForEdit(null);
+            fetchAgents(); // Refresh so next Edit open gets fresh cal_connected from DB
+          }}
         />
       )}
 

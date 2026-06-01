@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import { X, Loader2, AlertTriangle, Trash2, Calendar, Link2, Volume2 } from 'lucide-react';
-import { updateAgentApi, deleteAgentApi, getUser, getCalAuthUrl, disconnectCalApi, type Agent } from '../api/client';
+import { updateAgentApi, deleteAgentApi, getCalAuthUrl, disconnectAgentCalApi, type Agent } from '../api/client';
+
 import { useAgentStore } from '../store/agentStore';
+
 import toast from 'react-hot-toast';
 import VoiceSelectionModal from './VoiceSelectionModal';
 
@@ -18,7 +20,8 @@ const EditAgentModal = ({ agent, onClose }: Props) => {
   const [loading, setLoading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const { updateAgent, deleteAgent } = useAgentStore();
+  const { updateAgent, deleteAgent, fetchAgents } = useAgentStore();
+
 
   const [formData, setFormData] = useState({
     agent_name: agent.name,
@@ -38,28 +41,20 @@ const EditAgentModal = ({ agent, onClose }: Props) => {
   const [showVoiceModal, setShowVoiceModal] = useState(false);
 
   useEffect(() => {
-    checkCalConnection();
+    // Initialize cal connected state directly from the agent object (per-agent isolation)
+    setCalConnected(!!agent.cal_connected);
+    setCheckingCal(false);
 
-    const handleOAuthMessage = (event: MessageEvent) => {
+    const handleOAuthMessage = async (event: MessageEvent) => {
       if (event.data?.type === 'CAL_AUTH_SUCCESS') {
+        // After OAuth success, mark this agent as connected
         setCalConnected(true);
-        toast.success('Cal.com connected successfully!');
+        toast.success('Cal.com connected successfully for this agent!');
       }
     };
     window.addEventListener('message', handleOAuthMessage);
     return () => window.removeEventListener('message', handleOAuthMessage);
-  }, []);
-
-  const checkCalConnection = async () => {
-    try {
-      const user = await getUser();
-      setCalConnected(!!user.cal_connected);
-    } catch (e) {
-      console.error('Failed to check calendar connection:', e);
-    } finally {
-      setCheckingCal(false);
-    }
-  };
+  }, [agent.cal_connected]);
 
   const handleConnectCal = async () => {
     try {
@@ -76,11 +71,11 @@ const EditAgentModal = ({ agent, onClose }: Props) => {
   };
 
   const handleDisconnectCal = async () => {
-    if (!confirm('Are you sure you want to disconnect your Cal.com account? This will disable booking on new and existing agents.')) return;
+    if (!confirm('Are you sure you want to disconnect Cal.com from this agent? This will disable booking for this agent only.')) return;
     try {
-      await disconnectCalApi();
+      await disconnectAgentCalApi(agent.id);
       setCalConnected(false);
-      toast.success('Cal.com disconnected');
+      toast.success('Cal.com disconnected from this agent');
     } catch (e) {
       toast.error('Failed to disconnect Cal.com');
     }
@@ -129,7 +124,10 @@ const EditAgentModal = ({ agent, onClose }: Props) => {
         cal_api_key: formData.cal_api_key,
         cal_event_type_id: formData.cal_event_type_id,
         phone_number: formData.phone_number,
+        cal_connected: calConnected,  // ← preserve the OAuth connection state
       });
+      // Refresh agents list from API to get the latest cal_connected from DB
+      fetchAgents();
       toast.success('Agent updated successfully!');
       onClose();
     } catch (error: any) {
