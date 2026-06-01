@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
-import { X, Loader2, Calendar, Link2, Volume2 } from 'lucide-react';
-import { createAgent, getCalAuthUrl } from '../api/client';
+import { useState } from 'react';
+import { X, Loader2, Volume2 } from 'lucide-react';
+import { createAgent, type Agent } from '../api/client';
 
 import { useAgentStore } from '../store/agentStore';
 import toast from 'react-hot-toast';
@@ -61,7 +61,7 @@ const CreateAgentModal = ({ onClose }: Props) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => onClose()}>
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity" />
       <div
         className="relative bg-surface rounded-[16px] w-full max-w-[700px] shadow-2xl flex flex-col animate-in zoom-in-95 duration-200 border border-border/50"
@@ -69,7 +69,7 @@ const CreateAgentModal = ({ onClose }: Props) => {
       >
         <div className="px-6 py-5 border-b border-border flex items-center justify-between">
           <h2 className="text-[18px] font-bold text-surface-foreground">Create an Agent</h2>
-          <button onClick={onClose} className="p-1 rounded-md text-textMuted hover:bg-muted transition-colors">
+          <button onClick={() => onClose()} className="p-1 rounded-md text-textMuted hover:bg-muted transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -194,7 +194,7 @@ const CreateAgentModal = ({ onClose }: Props) => {
           </div>
 
           <div className="pt-2 flex justify-end gap-3 border-t border-border mt-4">
-            <button type="button" onClick={onClose} className="btn-outline">Cancel</button>
+            <button type="button" onClick={() => onClose()} className="btn-outline">Cancel</button>
             <button type="submit" disabled={loading} className="btn-primary min-w-[120px] flex justify-center items-center gap-2">
               {loading && <Loader2 className="w-4 h-4 animate-spin" />}
               {loading ? 'Creating...' : 'Create Agent'}
