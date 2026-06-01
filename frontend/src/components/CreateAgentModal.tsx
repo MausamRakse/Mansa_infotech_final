@@ -175,22 +175,25 @@ const CreateAgentModal = ({ onClose }: Props) => {
           </div>
 
           <div className="pt-2">
-            <label className="flex items-center justify-between cursor-pointer p-4 rounded-xl border border-border/50 bg-muted/10 hover:bg-muted/20 transition-colors">
+            <div 
+              onClick={() => setFormData({ ...formData, enable_calendar_booking: !formData.enable_calendar_booking })}
+              className="flex items-center justify-between cursor-pointer p-4 rounded-xl border border-border/50 bg-muted/10 hover:bg-muted/20 transition-all active:scale-[0.99] select-none"
+            >
               <div className="flex flex-col gap-1">
                 <span className="text-[14px] font-bold text-surface-foreground">Enable Meeting Booking</span>
                 <span className="text-[12px] text-textMuted">Allow this agent to fetch real-time slots and book appointments during calls.</span>
               </div>
-              <div className="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
+              <div className="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in pointer-events-none">
                 <input
                   type="checkbox"
                   checked={formData.enable_calendar_booking}
-                  onChange={e => setFormData({ ...formData, enable_calendar_booking: e.target.checked })}
+                  readOnly
                   className="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 border-muted appearance-none cursor-pointer transition-transform duration-200 ease-in-out z-10"
                   style={{ transform: formData.enable_calendar_booking ? 'translateX(100%)' : 'translateX(0)', borderColor: formData.enable_calendar_booking ? '#10b981' : '#374151' }}
                 />
-                <label className={`toggle-label block overflow-hidden h-5 rounded-full cursor-pointer transition-colors duration-200 ease-in-out ${formData.enable_calendar_booking ? 'bg-success' : 'bg-muted'}`}></label>
+                <span className={`toggle-label block overflow-hidden h-5 rounded-full cursor-pointer transition-colors duration-200 ease-in-out ${formData.enable_calendar_booking ? 'bg-success' : 'bg-muted'}`}></span>
               </div>
-            </label>
+            </div>
           </div>
 
           <div className="pt-2 flex justify-end gap-3 border-t border-border mt-4">
