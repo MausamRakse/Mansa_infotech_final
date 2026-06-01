@@ -168,18 +168,24 @@ def oauth_callback(code: str = Query(...), state: str = Query(...)):
         if not db_res.data:
             return error_html("Failed to update user profile in Supabase database.")
             
-        # If agent_id was passed, dynamically map the Event Type ID to agent_mappings
+        # If agent_id was passed, save OAuth tokens + event type ID directly to agent_mappings
         if agent_id:
             try:
                 from services import supabase_service
-                supabase_service.update_agent_mapping(
-                    agent_id=agent_id,
-                    user_id=user_id,
-                    cal_event_type_id=str(resolved_eid) if resolved_eid else ""
-                )
-                print(f"[CAL_CALLBACK] Updated agent {agent_id} mapping with event type ID {resolved_eid}")
+                agent_update = {
+                    "cal_event_type_id": str(resolved_eid) if resolved_eid else ""
+                }
+                # Also store agent-specific OAuth tokens so this agent is fully isolated
+                agent_token_update = {
+                    "cal_access_token": access_token,
+                    "cal_refresh_token": refresh_token,
+                    "cal_token_expiry": expiry_time.isoformat(),
+                    "cal_event_type_id": str(resolved_eid) if resolved_eid else ""
+                }
+                supabase.table("agent_mappings").update(agent_token_update).eq("agent_id", agent_id).eq("user_id", user_id).execute()
+                print(f"[CAL_CALLBACK] Saved agent-specific OAuth tokens for agent {agent_id} (event type ID: {resolved_eid})")
             except Exception as e:
-                print(f"[CAL_CALLBACK] Error updating agent mapping: {e}")
+                print(f"[CAL_CALLBACK] Error saving agent-specific OAuth tokens: {e}")
             
         return success_html()
         

@@ -69,6 +69,10 @@ def list_agents(user_id: str = Depends(get_user_id)):
                 continue
 
             mapping = mapping_dict[agent_id_str]
+            # An agent is considered "cal_connected" if it has its own OAuth token or API key
+            agent_cal_connected = bool(
+                mapping.get('cal_access_token') or mapping.get('cal_api_key')
+            )
             agents.append({
                 "id": agent_id_str,
                 "name": raw.get("agent_name", ""),
@@ -79,6 +83,7 @@ def list_agents(user_id: str = Depends(get_user_id)):
                 "meeting_enabled": mapping.get('meeting_enabled', True),
                 "cal_api_key": mapping.get('cal_api_key'),
                 "cal_event_type_id": mapping.get('cal_event_type_id'),
+                "cal_connected": agent_cal_connected,
             })
         return {"agents": agents}
     except Exception as e:
@@ -140,5 +145,68 @@ def delete_agent(req: DeleteAgentRequest, user_id: str = Depends(get_user_id)):
             tabbly.delete_agent(req.agent_id)
             supabase_service.delete_agent_mapping(str(req.agent_id))
         return {"success": True}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+class DisconnectAgentCalRequest(BaseModel):
+    agent_id: str
+
+@router.post("/disconnect-agent-cal")
+def disconnect_agent_cal(req: DisconnectAgentCalRequest, user_id: str = Depends(get_user_id)):
+    """Clears Cal.com OAuth tokens and API key from a specific agent's mapping. Disables booking for that agent only."""
+    try:
+        from middleware.auth import supabase
+        # Verify ownership
+        user_agent_ids = supabase_service.get_user_agent_ids(user_id)
+        if str(req.agent_id) not in user_agent_ids:
+            raise HTTPException(status_code=403, detail="Not authorized to modify this agent")
+
+        supabase.table("agent_mappings").update({
+            "cal_access_token": None,
+            "cal_refresh_token": None,
+            "cal_token_expiry": None,
+            "cal_api_key": None,
+            "cal_event_type_id": None,
+        }).eq("agent_id", str(req.agent_id)).eq("user_id", user_id).execute()
+
+        return {"success": True, "message": "Cal.com disconnected from this agent."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/cal-status/{agent_id}")
+def get_agent_cal_status(agent_id: str, user_id: str = Depends(get_user_id)):
+    """
+    Diagnostic endpoint: returns the Cal.com connection state for a specific agent.
+    Useful for debugging the OAuth persistence issue.
+    """
+    try:
+        from middleware.auth import supabase
+        resp = supabase.table("agent_mappings").select("*").eq("agent_id", agent_id).eq("user_id", user_id).execute()
+        if not resp.data:
+            return {"cal_connected": False, "reason": "No agent mapping found"}
+
+        mapping = resp.data[0]
+        columns = list(mapping.keys())
+        has_token_column = "cal_access_token" in columns
+
+        return {
+            "agent_id": agent_id,
+            "columns_present": columns,
+            "has_oauth_columns": has_token_column,
+            "cal_access_token_present": bool(mapping.get("cal_access_token")),
+            "cal_api_key_present": bool(mapping.get("cal_api_key")),
+            "cal_event_type_id": mapping.get("cal_event_type_id"),
+            "cal_connected": bool(mapping.get("cal_access_token") or mapping.get("cal_api_key")),
+            "migration_needed": not has_token_column,
+            "migration_sql": (
+                "ALTER TABLE public.agent_mappings "
+                "ADD COLUMN IF NOT EXISTS cal_access_token TEXT, "
+                "ADD COLUMN IF NOT EXISTS cal_refresh_token TEXT, "
+                "ADD COLUMN IF NOT EXISTS cal_token_expiry TIMESTAMP WITH TIME ZONE;"
+                if not has_token_column else None
+            )
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
