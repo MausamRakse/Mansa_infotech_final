@@ -134,7 +134,8 @@ def oauth_callback(code: str = Query(...), state: str = Query(...)):
     try:
         r = requests.post(token_url, json=payload, headers={"Content-Type": "application/json"})
         if r.status_code != 200:
-            return error_html(f"OAuth Token Exchange failed ({r.status_code}): {r.text}")
+            return error_html(f"OAuth Token Exchange failed ({r.status_code}): {r.text} | Sent redirect_uri: {redirect_uri}")
+            
             
         data = r.json()
         access_token = data.get("access_token")
