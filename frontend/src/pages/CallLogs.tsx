@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { fetchCallLogs, type CallLog } from '../api/client';
 import TranscriptModal from '../components/TranscriptModal';
 import { Download, PlayCircle, PhoneOff, Loader2, Play, Pause, X } from 'lucide-react';
@@ -7,6 +7,21 @@ const CallLogs = () => {
   const [logs, setLogs] = useState<CallLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedLog, setSelectedLog] = useState<CallLog | null>(null);
+
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [logs.length]);
+
+  const totalPages = Math.max(1, Math.ceil(logs.length / pageSize));
+
+  const paginatedLogs = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return logs.slice(start, start + pageSize);
+  }, [logs, currentPage, pageSize]);
 
   // Audio Player States
   const [activeAudioLog, setActiveAudioLog] = useState<CallLog | null>(null);
@@ -241,7 +256,8 @@ const CallLogs = () => {
             <p className="text-[14px] mt-1 max-w-sm text-center">Trigger your first call from the Agents page to see it appear here.</p>
           </div>
         ) : (
-          <div className="flex-1 overflow-auto">
+          <>
+            <div className="flex-1 overflow-auto">
             <table className="w-full text-left text-[14px]">
               <thead className="bg-surface sticky top-0 border-b border-border shadow-sm z-10 text-textMuted">
                 <tr>
@@ -255,7 +271,7 @@ const CallLogs = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/60">
-                {logs.map((log, i) => (
+                {paginatedLogs.map((log, i) => (
                   <tr key={i} className="hover:bg-surface/50 transition-colors group">
                     <td className="px-6 py-4 text-[13px] font-medium text-surface-foreground">{log.agent_name || "Unknown Agent"}</td>
                     <td className="px-6 py-4 font-mono text-[13px]">{log.phone_number}</td>
@@ -376,6 +392,75 @@ const CallLogs = () => {
               </tbody>
             </table>
           </div>
+
+          {/* Premium Pagination Footer (Centered in the middle of the page) */}
+          <div className="flex flex-col items-center justify-center gap-3 p-4 border-t border-border/40 bg-surface/50 text-[13px] text-textMuted select-none w-full">
+            
+            {/* Page number switcher buttons in the exact middle */}
+            <div className="flex items-center gap-1 font-bold">
+              <button
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+                className="px-3 py-1.5 rounded-lg border border-border/40 hover:bg-muted/30 disabled:opacity-40 disabled:hover:bg-transparent cursor-pointer disabled:cursor-not-allowed transition-all text-[12px]"
+              >
+                Previous
+              </button>
+              
+              <div className="flex items-center gap-1">
+                {Array.from({ length: totalPages }, (_, i) => i + 1)
+                  .filter(p => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 1)
+                  .map((p, idx, arr) => {
+                    const showEllipsis = idx > 0 && p - arr[idx - 1] > 1;
+                    return (
+                      <div key={p} className="flex items-center gap-1">
+                        {showEllipsis && <span className="px-1.5 opacity-60">...</span>}
+                        <button
+                          onClick={() => setCurrentPage(p)}
+                          className={`px-3 py-1.5 rounded-lg border cursor-pointer transition-all text-[12px] ${
+                            currentPage === p
+                              ? 'bg-primary text-primary-foreground border-primary'
+                              : 'border-border/40 hover:bg-muted/30'
+                          }`}
+                        >
+                          {p}
+                        </button>
+                      </div>
+                    );
+                  })}
+              </div>
+
+              <button
+                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages}
+                className="px-3 py-1.5 rounded-lg border border-border/40 hover:bg-muted/30 disabled:opacity-40 disabled:hover:bg-transparent cursor-pointer disabled:cursor-not-allowed transition-all text-[12px]"
+              >
+                Next
+              </button>
+            </div>
+
+            {/* Entries control and details centered below */}
+            <div className="flex flex-wrap items-center justify-center gap-2 text-[12px]">
+              <span>Show</span>
+              <select
+                value={pageSize}
+                onChange={(e) => {
+                  setPageSize(Number(e.target.value));
+                  setCurrentPage(1);
+                }}
+                className="bg-surface border border-border/30 rounded-lg px-2.5 py-1 font-bold text-surface-foreground cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary text-[11px]"
+              >
+                <option value={10}>10</option>
+                <option value={25}>25</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+              </select>
+              <span>entries</span>
+              <span className="opacity-60 ml-2">
+                (Showing {logs.length === 0 ? 0 : (currentPage - 1) * pageSize + 1} to {Math.min(currentPage * pageSize, logs.length)} of {logs.length} entries)
+              </span>
+            </div>
+          </div>
+          </>
         )}
       </div>
 
