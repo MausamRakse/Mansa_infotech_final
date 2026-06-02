@@ -13,7 +13,7 @@ export interface Voice {
   description: string;
 }
 
-export const AVAILABLE_VOICES: Voice[] = [
+const AVAILABLE_VOICES: Voice[] = [
   {
     id: 3,
     name: 'Asha',
