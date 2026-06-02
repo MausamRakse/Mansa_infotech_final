@@ -96,7 +96,7 @@ const Settings = () => {
               >
                 <option value="1">Voice 1 (Female)</option>
                 <option value="2">Voice 2 (Male)</option>
-                <option value="3">Voice 3 (Neutral)</option>
+                {/* <option value="3">Voice 3 (Neutral)</option> */}
               </select>
             </div>
           </div>

@@ -239,7 +239,7 @@ const EditAgentModal = ({ agent, onClose }: Props) => {
                           {formData.voice_id === 1 ? 'Riya Mehta' : formData.voice_id === 2 ? 'Akash' : 'Asha'}
                         </span>
                         <span className="text-[11px] text-textMuted ml-2">
-                          ({formData.voice_id === 1 ? 'Female' : formData.voice_id === 2 ? 'Male' : 'Neutral'} • Indian Accent)
+                          ({formData.voice_id === 1 ? 'Female' : formData.voice_id === 2 ? 'Male' : 'Female'} • Indian Accent)
                         </span>
                       </>
                     )}
