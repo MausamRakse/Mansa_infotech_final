@@ -1,11 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { getMeetingLogs, type MeetingLog } from '../api/client';
 import { 
   CalendarCheck, CalendarRange, Clock, RefreshCcw, 
   User, FileText, CheckCircle2, AlertCircle, 
-  ExternalLink, Code, Video, Copy, Download, X
+  ExternalLink, Code, Video, Copy, Download, X,
+  LayoutGrid, Calendar
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import CalendarView from '../components/CalendarView';
 
 const MeetingLogs = () => {
   const [logs, setLogs] = useState<MeetingLog[]>([]);
@@ -13,6 +15,15 @@ const MeetingLogs = () => {
   const [activeTab, setActiveTab] = useState<'booked' | 'failed'>('booked');
   const [selectedLog, setSelectedLog] = useState<MeetingLog | null>(null);
   const [copiedLogId, setCopiedLogId] = useState<boolean>(false);
+  const [viewMode, setViewMode] = useState<'list' | 'calendar'>(() => {
+    const saved = localStorage.getItem('meeting_logs_view_pref');
+    return (saved === 'list' || saved === 'calendar') ? saved : 'list';
+  });
+
+  const handleViewModeChange = (mode: 'list' | 'calendar') => {
+    setViewMode(mode);
+    localStorage.setItem('meeting_logs_view_pref', mode);
+  };
 
   const loadLogs = async () => {
     setLoading(true);
@@ -38,6 +49,21 @@ const MeetingLogs = () => {
   // Split active logs into featured (top 4 cards) and remaining (table list)
   const featuredLogs = activeLogs.slice(0, 4);
   const remainingLogs = activeLogs.slice(4);
+
+  // Pagination State for history table
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab, viewMode, logs.length]);
+
+  const totalPages = Math.max(1, Math.ceil(remainingLogs.length / pageSize));
+
+  const paginatedRemainingLogs = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return remainingLogs.slice(start, start + pageSize);
+  }, [remainingLogs, currentPage, pageSize]);
 
   // Helper to parse dates, times, and participant details
   const parseMeetingDetails = (log: MeetingLog) => {
@@ -159,7 +185,35 @@ const MeetingLogs = () => {
           <p className="text-textMuted mt-1 text-[14px]">Detailed records of AI meeting booking attempts and outcomes.</p>
         </div>
         
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          {/* View Switcher Toggle Pill */}
+          <div className="bg-muted/40 p-1 rounded-xl inline-flex border border-border/20 gap-1">
+            <button
+              onClick={() => handleViewModeChange('list')}
+              className={`px-3 py-1.5 rounded-lg text-[12px] font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                viewMode === 'list'
+                  ? 'bg-primary text-primary-foreground shadow-sm'
+                  : 'text-textMuted hover:text-surface-foreground hover:bg-muted/20'
+              }`}
+              title="List View"
+            >
+              <LayoutGrid className="w-3.5 h-3.5" />
+              <span>List</span>
+            </button>
+            <button
+              onClick={() => handleViewModeChange('calendar')}
+              className={`px-3 py-1.5 rounded-lg text-[12px] font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                viewMode === 'calendar'
+                  ? 'bg-primary text-primary-foreground shadow-sm'
+                  : 'text-textMuted hover:text-surface-foreground hover:bg-muted/20'
+              }`}
+              title="Calendar View"
+            >
+              <Calendar className="w-3.5 h-3.5" />
+              <span>Calendar</span>
+            </button>
+          </div>
+
           <button 
             onClick={loadLogs}
             disabled={loading}
@@ -221,6 +275,12 @@ const MeetingLogs = () => {
           <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
           <p className="font-bold text-sm tracking-widest uppercase text-textMuted">Syncing meeting archives...</p>
         </div>
+      ) : viewMode === 'calendar' ? (
+        <CalendarView 
+          logs={logs} 
+          onViewDetails={(log) => setSelectedLog(log)} 
+          activeTab={activeTab} 
+        />
       ) : activeLogs.length === 0 ? (
         <div className="bg-surface rounded-[24px] border border-border/60 shadow-xl shadow-black/5 py-24 text-center flex flex-col items-center justify-center gap-4 px-6">
           <div className="w-20 h-20 bg-muted/40 rounded-full flex items-center justify-center text-textMuted animate-bounce duration-[2000ms]">
@@ -366,7 +426,7 @@ const MeetingLogs = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border/30">
-                    {remainingLogs.map((log) => {
+                    {paginatedRemainingLogs.map((log) => {
                       const { participantName, participantEmail, topic } = parseMeetingDetails(log);
                       
                       return (
@@ -417,6 +477,74 @@ const MeetingLogs = () => {
                     })}
                   </tbody>
                 </table>
+
+                {/* Premium Pagination Footer (Centered in the middle of the page) */}
+                <div className="flex flex-col items-center justify-center gap-3 p-4 border-t border-border/40 bg-surface/50 text-[13px] text-textMuted select-none w-full">
+                  
+                  {/* Page number switcher buttons in the exact middle */}
+                  <div className="flex items-center gap-1 font-bold">
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                      disabled={currentPage === 1}
+                      className="px-3 py-1.5 rounded-lg border border-border/40 hover:bg-muted/30 disabled:opacity-40 disabled:hover:bg-transparent cursor-pointer disabled:cursor-not-allowed transition-all text-[12px]"
+                    >
+                      Previous
+                    </button>
+                    
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: totalPages }, (_, i) => i + 1)
+                        .filter(p => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 1)
+                        .map((p, idx, arr) => {
+                          const showEllipsis = idx > 0 && p - arr[idx - 1] > 1;
+                          return (
+                            <div key={p} className="flex items-center gap-1">
+                              {showEllipsis && <span className="px-1.5 opacity-60">...</span>}
+                              <button
+                                onClick={() => setCurrentPage(p)}
+                                className={`px-3 py-1.5 rounded-lg border cursor-pointer transition-all text-[12px] ${
+                                  currentPage === p
+                                    ? 'bg-primary text-primary-foreground border-primary'
+                                    : 'border-border/40 hover:bg-muted/30'
+                                }`}
+                              >
+                                {p}
+                              </button>
+                            </div>
+                          );
+                        })}
+                    </div>
+
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                      disabled={currentPage === totalPages}
+                      className="px-3 py-1.5 rounded-lg border border-border/40 hover:bg-muted/30 disabled:opacity-40 disabled:hover:bg-transparent cursor-pointer disabled:cursor-not-allowed transition-all text-[12px]"
+                    >
+                      Next
+                    </button>
+                  </div>
+
+                  {/* Entries control and details centered below */}
+                  <div className="flex flex-wrap items-center justify-center gap-2 text-[12px]">
+                    <span>Show</span>
+                    <select
+                      value={pageSize}
+                      onChange={(e) => {
+                        setPageSize(Number(e.target.value));
+                        setCurrentPage(1);
+                      }}
+                      className="bg-surface border border-border/30 rounded-[10px] px-2.5 py-1 font-bold text-surface-foreground cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary text-[11px]"
+                    >
+                      <option value={10}>10</option>
+                      <option value={25}>25</option>
+                      <option value={50}>50</option>
+                      <option value={100}>100</option>
+                    </select>
+                    <span>entries</span>
+                    <span className="opacity-60 ml-2">
+                      (Showing {remainingLogs.length === 0 ? 0 : (currentPage - 1) * pageSize + 1} to {Math.min(currentPage * pageSize, remainingLogs.length)} of {remainingLogs.length} entries)
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
           )}
