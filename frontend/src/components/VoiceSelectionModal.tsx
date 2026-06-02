@@ -6,7 +6,7 @@ export interface Voice {
   id: number;
   name: string;
   badge?: string;
-  gender: 'Female' | 'Male' | 'Neutral';
+  gender: 'Female' | 'Male';
   language: string;
   accent: string;
   audioUrl: string;
@@ -221,7 +221,6 @@ const VoiceSelectionModal = ({ selectedVoiceId, onSelect, onClose }: Props) => {
                 <option value="All">All Genders</option>
                 <option value="Female">Female</option>
                 <option value="Male">Male</option>
-                <option value="Neutral">Neutral</option>
               </select>
             </div>
           </div>
